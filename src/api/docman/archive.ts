@@ -8,7 +8,7 @@ import { DocArchivePackage } from './types';
  */
 export function archiveProject(projectId: number): AxiosPromise<void> {
   return request({
-    url: `/docman/archive/project/${projectId}`,
+    url: `/docman/archive/${projectId}`,
     method: 'post'
   });
 }
