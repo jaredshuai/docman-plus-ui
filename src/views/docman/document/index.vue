@@ -31,13 +31,14 @@
     <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize" @pagination="getList" />
 
     <!-- 上传文档对话框 -->
-    <el-dialog v-model="upload.open" :title="upload.title" width="400px" append-to-body>
+    <el-dialog v-model="upload.open" :title="upload.title" width="400px" append-to-body @close="handleClose">
       <el-upload
         ref="uploadRef"
         :limit="1"
         accept=".pdf,.doc,.docx,.dwg"
         :http-request="submitUpload"
         :disabled="upload.isUploading"
+        :auto-upload="false"
         drag
       >
         <el-icon class="el-icon--upload"><upload-filled /></el-icon>
@@ -63,7 +64,7 @@ import { ref, onMounted, reactive } from 'vue';
 import { useRoute } from 'vue-router';
 import { listDocument, uploadDocument } from '@/api/docman/document';
 import { DocDocumentRecord, DocDocumentQuery, PageResult } from '@/api/docman/types';
-import { ElMessage } from 'element-plus';
+import { ElMessage, UploadInstance, UploadRequestOptions } from 'element-plus';
 
 const route = useRoute();
 const projectId = ref(Number(route.query.projectId));
@@ -72,7 +73,7 @@ const total = ref(0);
 const loading = ref(true);
 const queryParams = ref<DocDocumentQuery>({ pageNum: 1, pageSize: 20 });
 
-const uploadRef = ref<any>();
+const uploadRef = ref<UploadInstance>();
 const upload = reactive({
   open: false,
   title: '上传文档',
@@ -94,7 +95,7 @@ function handleUpload() {
 }
 
 /** 提交上传 */
-async function submitUpload(options: any) {
+async function submitUpload(options: UploadRequestOptions) {
   const formData = new FormData();
   formData.append('file', options.file);
   formData.append('projectId', String(projectId.value));
@@ -107,13 +108,19 @@ async function submitUpload(options: any) {
     getList();
   } catch (error) {
     console.error('上传失败', error);
+    ElMessage.error('上传失败，请重试');
   } finally {
     upload.isUploading = false;
   }
 }
 
 function submitFileForm() {
-  uploadRef.value.submit();
+  uploadRef.value?.submit();
+}
+
+/** 对话框关闭清理 */
+function handleClose() {
+  uploadRef.value?.clearFiles();
 }
 
 function statusType(s: string): 'warning' | 'primary' | 'success' | 'info' {
