@@ -21,11 +21,31 @@
       </el-table-column>
       <el-table-column prop="status" label="状态" width="100">
         <template #default="{ row }">
-          <el-tag :type="statusType(row.status)" size="small">{{ statusLabel(row.status) }}</el-tag>
+          <el-tag :type="statusTagType(row.status)" size="small">{{ statusLabel(row.status) }}</el-tag>
         </template>
       </el-table-column>
       <el-table-column prop="nasPath" label="存储路径" min-width="250" show-overflow-tooltip />
       <el-table-column prop="generatedAt" label="生成时间" width="180" />
+      <el-table-column label="操作" align="center" width="160" class-name="small-padding fixed-width">
+        <template #default="{ row }">
+          <el-button
+            v-hasPermi="['docman:document:download']"
+            size="small"
+            type="primary"
+            link
+            icon="Download"
+            @click="handleDownload(row)"
+          >下载</el-button>
+          <el-button
+            v-hasPermi="['docman:document:delete']"
+            size="small"
+            type="danger"
+            link
+            icon="Delete"
+            @click="handleDelete(row)"
+          >删除</el-button>
+        </template>
+      </el-table-column>
     </el-table>
 
     <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize" @pagination="getList" />
@@ -62,9 +82,9 @@
 <script setup lang="ts">
 import { ref, onMounted, reactive } from 'vue';
 import { useRoute } from 'vue-router';
-import { listDocument, uploadDocument } from '@/api/docman/document';
+import { listDocument, uploadDocument, deleteDocument } from '@/api/docman/document';
 import { DocDocumentRecord, DocDocumentQuery, PageResult } from '@/api/docman/types';
-import { ElMessage, UploadInstance, UploadRequestOptions } from 'element-plus';
+import { ElMessage, ElMessageBox, UploadInstance, UploadRequestOptions } from 'element-plus';
 
 const route = useRoute();
 const projectId = ref(Number(route.query.projectId));
@@ -87,6 +107,25 @@ const getList = async () => {
   documentList.value = res.data.rows;
   total.value = res.data.total;
   loading.value = false;
+};
+
+/** 下载按钮操作 */
+const handleDownload = (row: DocDocumentRecord) => {
+  window.open(`/api/docman/document/${row.id}/download`, '_blank');
+};
+
+/** 删除按钮操作 */
+const handleDelete = async (row: DocDocumentRecord) => {
+  try {
+    await ElMessageBox.confirm(`确认删除文档「${row.fileName}」？`, '提示', {
+      type: 'warning'
+    });
+    await deleteDocument(row.id);
+    ElMessage.success('删除成功');
+    getList();
+  } catch (error) {
+    // 用户取消删除
+  }
 };
 
 /** 上传按钮操作 */
@@ -123,17 +162,32 @@ function handleClose() {
   uploadRef.value?.clearFiles();
 }
 
-function statusType(s: string): 'warning' | 'primary' | 'success' | 'info' {
-  const map: Record<string, 'warning' | 'primary' | 'success' | 'info'> = {
+const statusTagType = (status: string): 'info' | 'success' | 'warning' | 'danger' | '' => {
+  const map: Record<string, 'info' | 'success' | 'warning' | 'danger' | ''> = {
+    draft: 'info',
+    active: 'success',
     pending: 'warning',
+    running: 'warning',
+    failed: 'danger',
+    obsolete: '',
     generated: 'primary',
     archived: 'success'
   };
-  return map[s] || 'info';
-}
+  return map[status] ?? 'info';
+};
 
 function statusLabel(s: string) {
-  return { pending: '待生成', generated: '已生成', archived: '已归档' }[s] || s;
+  const map: Record<string, string> = {
+    draft: '草稿',
+    active: '激活',
+    pending: '待生成',
+    running: '生成中',
+    failed: '失败',
+    obsolete: '作废',
+    generated: '已生成',
+    archived: '已归档'
+  };
+  return map[s] || s;
 }
 
 onMounted(() => getList());

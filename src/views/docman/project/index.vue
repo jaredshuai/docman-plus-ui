@@ -45,6 +45,7 @@
           <template #footer>
             <el-button size="small" @click.stop="handleDocuments(item.id)" v-hasPermi="['docman:document:list']">文档中心</el-button>
             <el-button size="small" type="warning" @click.stop="handleProcess(item.id)" v-hasPermi="['docman:process:view']">流程</el-button>
+            <el-button size="small" type="info" @click.stop="handleMembers(item.id)" v-hasPermi="['docman:member:list']">成员</el-button>
             <el-button size="small" type="primary" plain @click.stop="handleUpdate(item)" v-hasPermi="['docman:project:edit']">编辑</el-button>
             <el-button size="small" type="success" v-if="item.status === 'active'" @click.stop="handleArchive(item.id)" v-hasPermi="['docman:archive:execute']">归档</el-button>
             <el-button size="small" type="info" plain @click.stop="handleArchiveDetail(item.id)" v-hasPermi="['docman:archive:view']">归档详情</el-button>
@@ -223,6 +224,7 @@ function handleDelete(id: number) {
 
 function handleDocuments(id: number) { router.push({ path: '/docman/document', query: { projectId: String(id) } }); }
 function handleProcess(id: number) { router.push({ path: '/docman/process', query: { projectId: String(id) } }); }
+function handleMembers(id: number) { router.push({ path: '/docman/member', query: { projectId: String(id) } }); }
 function handleArchiveDetail(id: number) { router.push({ path: '/docman/archive', query: { projectId: String(id) } }); }
 
 /** 归档按钮操作 */

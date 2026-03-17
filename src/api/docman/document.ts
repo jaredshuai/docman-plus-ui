@@ -13,3 +13,11 @@ export function getDocument(id: number): AxiosPromise<DocDocumentRecord> {
 export function uploadDocument(data: FormData): AxiosPromise<void> {
   return request({ url: '/docman/document/upload', method: 'post', data });
 }
+
+export function downloadDocument(id: number): AxiosPromise<Blob> {
+  return request({ url: `/docman/document/${id}/download`, method: 'get', responseType: 'blob' });
+}
+
+export function deleteDocument(id: number): AxiosPromise<void> {
+  return request({ url: `/docman/document/${id}`, method: 'delete' });
+}
