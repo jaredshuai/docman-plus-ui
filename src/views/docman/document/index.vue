@@ -4,7 +4,7 @@
       <template #content>文档中心</template>
     </el-page-header>
 
-    <el-table :data="documentList" style="margin-top: 16px;">
+    <el-table v-loading="loading" :data="documentList" style="margin-top: 16px;">
       <el-table-column prop="fileName" label="文件名" min-width="200" />
       <el-table-column prop="sourceType" label="来源" width="120">
         <template #default="{ row }">
@@ -30,22 +30,28 @@
 import { ref, onMounted } from 'vue';
 import { useRoute } from 'vue-router';
 import { listDocument } from '@/api/docman/document';
+import { DocDocumentRecord, DocDocumentQuery, PageResult } from '@/api/docman/types';
 
 const route = useRoute();
 const projectId = ref(Number(route.query.projectId));
-const documentList = ref<any[]>([]);
+const documentList = ref<DocDocumentRecord[]>([]);
 const total = ref(0);
-const queryParams = ref({ pageNum: 1, pageSize: 20 });
+const loading = ref(true);
+const queryParams = ref<DocDocumentQuery>({ pageNum: 1, pageSize: 20 });
 
-function getList() {
-  listDocument(projectId.value, queryParams.value).then((res: any) => {
-    documentList.value = res.rows;
-    total.value = res.total;
-  });
-}
+/** 查询文档列表 */
+const getList = async () => {
+  loading.value = true;
+  const res = await listDocument(projectId.value, queryParams.value);
+  documentList.value = res.data.rows;
+  total.value = res.data.total;
+  loading.value = false;
+};
+
 function statusType(s: string) {
   return { pending: 'warning', generated: 'primary', archived: 'success' }[s] || 'info';
 }
+
 function statusLabel(s: string) {
   return { pending: '待生成', generated: '已生成', archived: '已归档' }[s] || s;
 }

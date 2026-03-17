@@ -1,3 +1,8 @@
+export interface PageResult<T> {
+  rows: T[];
+  total: number;
+}
+
 export interface DocProject {
   id: number;
   name: string;
@@ -15,6 +20,21 @@ export interface DocProject {
   createTime?: string;
 }
 
+export interface DocProjectQuery extends PageQuery {
+  name?: string;
+  customerType?: string;
+  businessType?: string;
+}
+
+export interface DocProjectForm {
+  id?: number;
+  name: string;
+  customerType: string;
+  businessType: string;
+  documentCategory: string;
+  remark?: string;
+}
+
 export interface DocDocumentRecord {
   id: number;
   projectId: number;
@@ -29,6 +49,10 @@ export interface DocDocumentRecord {
   generatedAt?: string;
   archivedAt?: string;
   createTime?: string;
+}
+
+export interface DocDocumentQuery extends PageQuery {
+  projectId?: number;
 }
 
 export interface DocProcessConfig {
