@@ -49,14 +49,15 @@ import { ref, onMounted } from 'vue';
 import { useRoute } from 'vue-router';
 import { bindProcess, startProcess, getProcessConfig } from '@/api/docman/process';
 import { ElMessage } from 'element-plus';
+import { DocProcessConfig } from '@/api/docman/types';
 
 const route = useRoute();
 const projectId = ref(Number(route.query.projectId));
-const processConfig = ref<any>(null);
+const processConfig = ref<DocProcessConfig | null>(null);
 const selectedDefinitionId = ref<number>();
 
 function loadConfig() {
-  getProcessConfig(projectId.value).then((res: any) => {
+  getProcessConfig(projectId.value).then((res) => {
     processConfig.value = res.data;
   });
 }

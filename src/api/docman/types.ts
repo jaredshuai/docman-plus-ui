@@ -69,7 +69,7 @@ export interface DocArchivePackage {
   archiveNo: string;
   archiveVersion: number;
   nasArchivePath: string;
-  manifest: Array<Record<string, string>>;
+  manifest: Array<{ fileName: string; path: string }>;
   snapshotChecksum?: string;
   status: string;
   requestedAt?: string;

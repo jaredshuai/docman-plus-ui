@@ -30,7 +30,7 @@
 
     <el-row :gutter="16" v-loading="loading">
       <el-col :xs="24" :sm="12" :md="8" :lg="6" v-for="item in projectList" :key="item.id">
-        <el-card shadow="hover" class="project-card" style="margin-bottom: 16px; cursor: pointer;" @click="handleDetail(item.id)">
+        <el-card shadow="hover" class="project-card" style="margin-bottom: 16px; cursor: pointer;" @click="handleDocuments(item.id)">
           <template #header>
             <div style="display: flex; justify-content: space-between; align-items: center;">
               <span style="font-weight: bold;">{{ item.name }}</span>
@@ -43,11 +43,12 @@
           <p>类型：{{ item.businessType === 'pipeline' ? '管线' : '弱电' }}</p>
           <p>负责人：{{ item.ownerName }}</p>
           <template #footer>
-            <el-button size="small" @click.stop="handleDocuments(item.id)">文档中心</el-button>
-            <el-button size="small" type="warning" @click.stop="handleProcess(item.id)">流程</el-button>
+            <el-button size="small" @click.stop="handleDocuments(item.id)" v-hasPermi="['docman:document:list']">文档中心</el-button>
+            <el-button size="small" type="warning" @click.stop="handleProcess(item.id)" v-hasPermi="['docman:process:view']">流程</el-button>
             <el-button size="small" type="primary" plain @click.stop="handleUpdate(item)" v-hasPermi="['docman:project:edit']">编辑</el-button>
             <el-button size="small" type="success" v-if="item.status === 'active'" @click.stop="handleArchive(item.id)" v-hasPermi="['docman:archive:execute']">归档</el-button>
-            <el-button size="small" type="info" plain @click.stop="handleArchiveDetail(item.id)">归档详情</el-button>
+            <el-button size="small" type="info" plain @click.stop="handleArchiveDetail(item.id)" v-hasPermi="['docman:archive:view']">归档详情</el-button>
+            <el-button size="small" type="danger" plain @click.stop="handleDelete(item.id)" v-hasPermi="['docman:project:delete']">删除</el-button>
           </template>
         </el-card>
       </el-col>
@@ -93,7 +94,7 @@
 <script setup lang="ts">
 import { ref, onMounted, reactive, toRefs, getCurrentInstance, ComponentInternalInstance } from 'vue';
 import { useRouter } from 'vue-router';
-import { listProject, addProject, updateProject } from '@/api/docman/project';
+import { listProject, addProject, updateProject, delProject } from '@/api/docman/project';
 import { archiveProject } from '@/api/docman/archive';
 import { DocProject, DocProjectQuery, DocProjectForm, PageResult } from '@/api/docman/types';
 
@@ -211,7 +212,15 @@ const submitForm = () => {
   });
 };
 
-function handleDetail(id: number) { router.push({ path: '/docman/document', query: { projectId: String(id) } }); }
+/** 删除按钮操作 */
+function handleDelete(id: number) {
+  proxy?.$modal.confirm('是否确认删除该项目？').then(async () => {
+    await delProject([id]);
+    proxy?.$modal.msgSuccess('删除成功');
+    getList();
+  }).catch(() => {});
+}
+
 function handleDocuments(id: number) { router.push({ path: '/docman/document', query: { projectId: String(id) } }); }
 function handleProcess(id: number) { router.push({ path: '/docman/process', query: { projectId: String(id) } }); }
 function handleArchiveDetail(id: number) { router.push({ path: '/docman/archive', query: { projectId: String(id) } }); }
