@@ -9,10 +9,13 @@
 
       <el-form :inline="true" v-if="!processConfig">
         <el-form-item label="选择流程模板">
-          <el-select v-model="selectedDefinitionId" placeholder="请选择">
-            <!-- TODO: 动态加载 Warm-Flow 流程定义列表 -->
-            <el-option label="管线施工流程" :value="1" />
-            <el-option label="弱电施工流程" :value="2" />
+          <el-select v-model="selectedDefinitionId" placeholder="请选择流程模板">
+            <el-option
+              v-for="item in definitionList"
+              :key="item.id"
+              :label="item.name"
+              :value="item.id"
+            />
           </el-select>
         </el-form-item>
         <el-form-item>
@@ -47,7 +50,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
 import { useRoute } from 'vue-router';
-import { bindProcess, startProcess, getProcessConfig } from '@/api/docman/process';
+import { bindProcess, startProcess, getProcessConfig, listProcessDefinitions } from '@/api/docman/process';
 import { ElMessage } from 'element-plus';
 import { DocProcessConfig } from '@/api/docman/types';
 
@@ -55,10 +58,17 @@ const route = useRoute();
 const projectId = ref(Number(route.query.projectId));
 const processConfig = ref<DocProcessConfig | null>(null);
 const selectedDefinitionId = ref<number>();
+const definitionList = ref<Array<{ id: number; name: string }>>([]);
 
 function loadConfig() {
   getProcessConfig(projectId.value).then((res) => {
     processConfig.value = res.data;
+  });
+}
+
+function loadDefinitions() {
+  listProcessDefinitions().then(res => {
+    definitionList.value = res.data;
   });
 }
 function handleBind() {
@@ -75,5 +85,8 @@ function handleStart() {
   });
 }
 
-onMounted(() => loadConfig());
+onMounted(() => {
+  loadConfig();
+  loadDefinitions();
+});
 </script>

@@ -49,6 +49,7 @@ import { ref, onMounted } from 'vue';
 import { useRoute } from 'vue-router';
 import { getArchive } from '@/api/docman/archive';
 import { DocArchivePackage } from '@/api/docman/types';
+import { ElMessage } from 'element-plus';
 
 const route = useRoute();
 const projectId = ref(Number(route.query.projectId));
@@ -64,6 +65,7 @@ const getArchiveInfo = async () => {
     archiveInfo.value = res.data;
   } catch (error) {
     console.error('获取归档信息失败', error);
+    ElMessage.error('获取归档信息失败');
   } finally {
     loading.value = false;
   }

@@ -51,7 +51,7 @@
       </el-upload>
       <template #footer>
         <div class="dialog-footer">
-          <el-button type="primary" @click="submitFileForm" :loading="upload.isUploading">确 定</el-button>
+          <el-button type="primary" @click="submitFileForm" :loading="upload.isUploading" v-hasPermi="['docman:document:upload']">确 定</el-button>
           <el-button @click="upload.open = false">取 消</el-button>
         </div>
       </template>

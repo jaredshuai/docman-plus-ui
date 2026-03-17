@@ -13,3 +13,10 @@ export function startProcess(projectId: number): AxiosPromise<void> {
 export function getProcessConfig(projectId: number): AxiosPromise<DocProcessConfig> {
   return request({ url: '/docman/process/' + projectId, method: 'get' });
 }
+
+/**
+ * 获取流程定义列表
+ */
+export function listProcessDefinitions(): AxiosPromise<Array<{ id: number; name: string }>> {
+  return request({ url: '/docman/process/definitions', method: 'get' });
+}
