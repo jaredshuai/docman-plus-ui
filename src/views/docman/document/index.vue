@@ -48,8 +48,13 @@ const getList = async () => {
   loading.value = false;
 };
 
-function statusType(s: string) {
-  return { pending: 'warning', generated: 'primary', archived: 'success' }[s] || 'info';
+function statusType(s: string): 'warning' | 'primary' | 'success' | 'info' {
+  const map: Record<string, 'warning' | 'primary' | 'success' | 'info'> = {
+    pending: 'warning',
+    generated: 'primary',
+    archived: 'success'
+  };
+  return map[s] || 'info';
 }
 
 function statusLabel(s: string) {

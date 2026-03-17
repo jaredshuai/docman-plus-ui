@@ -45,7 +45,9 @@
           <template #footer>
             <el-button size="small" @click.stop="handleDocuments(item.id)">文档中心</el-button>
             <el-button size="small" type="warning" @click.stop="handleProcess(item.id)">流程</el-button>
+            <el-button size="small" type="primary" plain @click.stop="handleUpdate(item)" v-hasPermi="['docman:project:edit']">编辑</el-button>
             <el-button size="small" type="success" v-if="item.status === 'active'" @click.stop="handleArchive(item.id)" v-hasPermi="['docman:archive:execute']">归档</el-button>
+            <el-button size="small" type="info" plain @click.stop="handleArchiveDetail(item.id)">归档详情</el-button>
           </template>
         </el-card>
       </el-col>
@@ -91,7 +93,7 @@
 <script setup lang="ts">
 import { ref, onMounted, reactive, toRefs, getCurrentInstance, ComponentInternalInstance } from 'vue';
 import { useRouter } from 'vue-router';
-import { listProject, addProject } from '@/api/docman/project';
+import { listProject, addProject, updateProject } from '@/api/docman/project';
 import { archiveProject } from '@/api/docman/archive';
 import { DocProject, DocProjectQuery, DocProjectForm, PageResult } from '@/api/docman/types';
 
@@ -111,6 +113,7 @@ const dialog = reactive<DialogOption>({
 });
 
 const initFormData: DocProjectForm = {
+  id: undefined,
   name: '',
   customerType: 'telecom',
   businessType: 'pipeline',
@@ -170,6 +173,21 @@ function handleAdd() {
   dialog.title = '新增项目';
 }
 
+/** 修改按钮操作 */
+function handleUpdate(row: DocProject) {
+  reset();
+  dialog.visible = true;
+  dialog.title = '修改项目';
+  Object.assign(form.value, {
+    id: row.id,
+    name: row.name,
+    customerType: row.customerType,
+    businessType: row.businessType,
+    documentCategory: row.documentCategory,
+    remark: row.remark
+  });
+}
+
 /** 取消按钮 */
 function cancel() {
   dialog.visible = false;
@@ -180,8 +198,13 @@ function cancel() {
 const submitForm = () => {
   projectFormRef.value?.validate(async (valid: boolean) => {
     if (valid) {
-      await addProject(form.value);
-      proxy?.$modal.msgSuccess('新增成功');
+      if (form.value.id != undefined) {
+        await updateProject(form.value);
+        proxy?.$modal.msgSuccess('修改成功');
+      } else {
+        await addProject(form.value);
+        proxy?.$modal.msgSuccess('新增成功');
+      }
       dialog.visible = false;
       getList();
     }
@@ -191,6 +214,7 @@ const submitForm = () => {
 function handleDetail(id: number) { router.push({ path: '/docman/document', query: { projectId: String(id) } }); }
 function handleDocuments(id: number) { router.push({ path: '/docman/document', query: { projectId: String(id) } }); }
 function handleProcess(id: number) { router.push({ path: '/docman/process', query: { projectId: String(id) } }); }
+function handleArchiveDetail(id: number) { router.push({ path: '/docman/archive', query: { projectId: String(id) } }); }
 
 /** 归档按钮操作 */
 function handleArchive(id: number) {

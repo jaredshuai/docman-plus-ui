@@ -4,71 +4,80 @@
       <template #content>归档详情</template>
     </el-page-header>
 
-    <el-row :gutter="16" style="margin-top: 16px;">
-      <el-col :span="8">
-        <el-card>
-          <template #header>归档历史</template>
-          <el-table :data="historyList" max-height="480" highlight-current-row @current-change="handleCurrentChange">
-            <el-table-column prop="archiveVersion" label="版本" width="80" />
-            <el-table-column prop="archiveNo" label="归档编号" min-width="180" show-overflow-tooltip />
-            <el-table-column prop="completedAt" label="完成时间" min-width="160" />
-          </el-table>
-        </el-card>
-      </el-col>
-      <el-col :span="16">
-        <el-descriptions v-if="archive" :column="2" border>
-          <el-descriptions-item label="归档编号">{{ archive.archiveNo }}</el-descriptions-item>
-          <el-descriptions-item label="归档版本">V{{ archive.archiveVersion }}</el-descriptions-item>
-          <el-descriptions-item label="归档路径">{{ archive.nasArchivePath }}</el-descriptions-item>
-          <el-descriptions-item label="状态">
-            <el-tag type="success">{{ archive.status === 'completed' ? '已完成' : '生成中' }}</el-tag>
-          </el-descriptions-item>
-          <el-descriptions-item label="校验值" :span="2">{{ archive.snapshotChecksum }}</el-descriptions-item>
-          <el-descriptions-item label="申请时间">{{ archive.requestedAt || archive.createTime }}</el-descriptions-item>
-          <el-descriptions-item label="完成时间">{{ archive.completedAt || archive.createTime }}</el-descriptions-item>
-        </el-descriptions>
+    <el-card v-loading="loading" shadow="hover" style="margin-top: 20px;">
+      <template #header>
+        <div class="card-header">
+          <span>归档基本信息</span>
+        </div>
+      </template>
 
-        <h3 style="margin-top: 24px;">归档清单</h3>
-        <el-table :data="archive?.manifest || []">
-          <el-table-column type="index" label="序号" width="60" />
-          <el-table-column prop="fileName" label="文件名" min-width="200" />
-          <el-table-column prop="nasPath" label="存储路径" min-width="300" show-overflow-tooltip />
-          <el-table-column prop="sourceType" label="来源" width="120">
-            <template #default="{ row }">{{ row.sourceType === 'plugin' ? '插件生成' : '手动上传' }}</template>
-          </el-table-column>
-          <el-table-column prop="generatedAt" label="生成时间" width="180" />
-        </el-table>
-      </el-col>
-    </el-row>
-    </el-table>
-    <el-empty v-if="!archive && historyList.length === 0" description="暂无归档数据" />
-    <el-empty v-if="!archive" description="暂无归档数据" />
+      <el-descriptions v-if="archiveInfo" :column="2" border>
+        <el-descriptions-item label="归档编号">{{ archiveInfo.archiveNo }}</el-descriptions-item>
+        <el-descriptions-item label="版本号">
+          <el-tag size="small">V{{ archiveInfo.archiveVersion }}</el-tag>
+        </el-descriptions-item>
+        <el-descriptions-item label="归档状态">
+          <el-tag :type="archiveInfo.status === 'completed' ? 'success' : 'warning'">
+            {{ archiveInfo.status === 'completed' ? '已完成' : '归档中' }}
+          </el-tag>
+        </el-descriptions-item>
+        <el-descriptions-item label="归档时间">{{ archiveInfo.completedAt || archiveInfo.createTime }}</el-descriptions-item>
+        <el-descriptions-item label="归档路径" :span="2">{{ archiveInfo.nasArchivePath }}</el-descriptions-item>
+        <el-descriptions-item label="校验和" :span="2">{{ archiveInfo.snapshotChecksum || '-' }}</el-descriptions-item>
+      </el-descriptions>
+
+      <el-empty v-else description="暂无归档记录" />
+    </el-card>
+
+    <el-card v-if="archiveInfo && archiveInfo.manifest" shadow="hover" style="margin-top: 20px;">
+      <template #header>
+        <div class="card-header">
+          <span>文件清单</span>
+        </div>
+      </template>
+      <el-table :data="archiveInfo.manifest" border stripe>
+        <el-table-column type="index" label="序号" width="60" align="center" />
+        <el-table-column prop="fileName" label="文件名" />
+        <el-table-column prop="path" label="路径" show-overflow-tooltip />
+      </el-table>
+    </el-card>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
-import { getArchive, listArchiveHistory } from '@/api/docman/archive';
+import { useRoute } from 'vue-router';
 import { getArchive } from '@/api/docman/archive';
+import { DocArchivePackage } from '@/api/docman/types';
 
 const route = useRoute();
 const projectId = ref(Number(route.query.projectId));
-const historyList = ref<any[]>([]);
+const loading = ref(true);
+const archiveInfo = ref<DocArchivePackage | null>(null);
 
-function handleCurrentChange(row: any) {
-  if (row) archive.value = row;
-}
-const archive = ref<any>(null);
+/** 获取归档信息 */
+const getArchiveInfo = async () => {
+  if (!projectId.value) return;
+  loading.value = true;
+  try {
+    const res = await getArchive(projectId.value);
+    archiveInfo.value = res.data;
+  } catch (error) {
+    console.error('获取归档信息失败', error);
+  } finally {
+    loading.value = false;
+  }
+};
 
 onMounted(() => {
-  getArchive(projectId.value).then((res: any) => {
-    archive.value = res.data;
-  listArchiveHistory(projectId.value).then((res: any) => {
-    historyList.value = res.data || [];
-    if (!archive.value && historyList.value.length > 0) {
-      archive.value = historyList.value[0];
-    }
-  });
-  });
+  getArchiveInfo();
 });
 </script>
+
+<style scoped>
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+</style>
