@@ -17,6 +17,15 @@ const isWhiteList = (path: string) => {
   return whiteList.some((pattern) => isPathMatch(pattern, path));
 };
 
+const resolveWorkspaceLanding = (path: string) => {
+  const userStore = useUserStore();
+  const isWorkspaceUser = userStore.roles.includes('docman_user') && !userStore.roles.includes('superadmin');
+  if (isWorkspaceUser && (path === '/' || path === '/index')) {
+    return '/workspace/home';
+  }
+  return '';
+};
+
 router.beforeEach(async (to, from, next) => {
   NProgress.start();
   if (getToken()) {
@@ -45,11 +54,24 @@ router.beforeEach(async (to, from, next) => {
               router.addRoute(route); // 动态添加可访问路由表
             }
           });
+          const workspaceLanding = resolveWorkspaceLanding(to.path);
           // @ts-expect-error hack方法 确保addRoutes已完成
-          next({ path: to.path, replace: true, params: to.params, query: to.query, hash: to.hash, name: to.name as string }); // hack方法 确保addRoutes已完成
+          next({
+            path: workspaceLanding || to.path,
+            replace: true,
+            params: workspaceLanding ? undefined : to.params,
+            query: workspaceLanding ? undefined : to.query,
+            hash: workspaceLanding ? undefined : to.hash,
+            name: workspaceLanding ? undefined : (to.name as string)
+          }); // hack方法 确保addRoutes已完成
         }
       } else {
-        next();
+        const workspaceLanding = resolveWorkspaceLanding(to.path);
+        if (workspaceLanding) {
+          next({ path: workspaceLanding, replace: true });
+        } else {
+          next();
+        }
       }
     }
   } else {
