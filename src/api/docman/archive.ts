@@ -1,6 +1,7 @@
 import request from '@/utils/request';
 import { AxiosPromise } from 'axios';
 import { DocArchivePackage } from './types';
+import download from '@/plugins/download';
 
 /**
  * 归档项目
@@ -30,7 +31,15 @@ export function getArchive(projectId: number): AxiosPromise<DocArchivePackage> {
  */
 export function listArchive(projectId: number): AxiosPromise<DocArchivePackage[]> {
   return request({
-    url: '/docman/archive/list/' + projectId,
+    url: `/docman/archive/history/${projectId}`,
     method: 'get'
   });
+}
+
+/**
+ * 下载归档包
+ * @param archiveId 归档ID
+ */
+export function downloadArchive(archiveId: number): void {
+  download.zip(`/docman/archive/${archiveId}/download`, `archive_${archiveId}.zip`);
 }

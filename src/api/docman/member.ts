@@ -5,17 +5,21 @@ export interface DocProjectMember {
   id: number;
   projectId: number;
   userId: number;
-  userName?: string;
-  role: string;
+  roleType: string;
   createTime: string;
+}
+
+export interface DocProjectMemberBo {
+  userId: number;
+  roleType: string;
 }
 
 export function listMembers(projectId: number): AxiosPromise<DocProjectMember[]> {
   return request({ url: `/docman/project/${projectId}/member`, method: 'get' });
 }
 
-export function addMember(projectId: number, userId: number, role: string): AxiosPromise<void> {
-  return request({ url: `/docman/project/${projectId}/member`, method: 'post', data: { userId, role } });
+export function addMember(projectId: number, data: DocProjectMemberBo): AxiosPromise<void> {
+  return request({ url: `/docman/project/${projectId}/member`, method: 'post', data });
 }
 
 export function removeMember(projectId: number, userId: number): AxiosPromise<void> {

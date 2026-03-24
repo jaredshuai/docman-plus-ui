@@ -93,7 +93,38 @@ export const constantRoutes: RouteRecordRaw[] = [
 
 // 动态路由，基于用户权限动态去加载
 export const dynamicRoutes: RouteRecordRaw[] = [
-
+  {
+    path: '/docman',
+    component: Layout,
+    hidden: true,
+    permissions: ['docman:project:list'],
+    children: [
+      {
+        path: 'dashboard',
+        component: () => import('@/views/docman/dashboard/index.vue'),
+        name: 'DocDashboard',
+        meta: { title: '仪表盘', noCache: true, activeMenu: '/docman/project', permissions: ['docman:project:list'] }
+      },
+      {
+        path: 'member/:projectId',
+        component: () => import('@/views/docman/member/index.vue'),
+        name: 'DocMember',
+        meta: { title: '成员管理', activeMenu: '/docman/project' }
+      },
+      {
+        path: 'plugin/log',
+        component: () => import('@/views/docman/plugin/index.vue'),
+        name: 'DocPluginLog',
+        meta: { title: '插件执行日志', noCache: true, activeMenu: '/docman/project', permissions: ['docman:plugin:list'] }
+      },
+      {
+        path: 'nodedeadline',
+        component: () => import('@/views/docman/nodedeadline/index.vue'),
+        name: 'DocNodeDeadline',
+        meta: { title: '节点时限管理', noCache: true, activeMenu: '/docman/project', permissions: ['docman:nodedeadline:query'] }
+      }
+    ]
+  }
 ];
 
 /**

@@ -1,49 +1,37 @@
 <template>
-  <div class="app-container">
+  <div class="app-container" data-testid="document-page">
     <el-page-header @back="$router.back()">
       <template #content>文档中心</template>
     </el-page-header>
 
-    <el-row :gutter="10" class="mb8" style="margin-top: 16px;">
+    <el-row :gutter="10" class="mb8" style="margin-top: 16px">
       <el-col :span="1.5">
         <el-button type="primary" plain icon="Upload" @click="handleUpload" v-hasPermi="['docman:document:upload']">上传文档</el-button>
       </el-col>
     </el-row>
 
-    <el-table v-loading="loading" :data="documentList" style="margin-top: 16px;">
+    <el-table v-loading="loading" :data="documentList" style="margin-top: 16px" :row-key="(row) => row.id" data-testid="document-table">
       <el-table-column prop="fileName" label="文件名" min-width="200" />
       <el-table-column prop="sourceType" label="来源" width="120">
         <template #default="{ row }">
-          <el-tag :type="row.sourceType === 'plugin' ? 'primary' : 'info'" size="small">
-            {{ row.sourceType === 'plugin' ? '插件生成' : '手动上传' }}
+          <el-tag :type="proxy?.selectDictLabel(doc_source_type.value, row.sourceType)?.cssClass || 'info'" size="small">
+            {{ proxy?.selectDictLabel(doc_source_type.value, row.sourceType)?.label || row.sourceType }}
           </el-tag>
         </template>
       </el-table-column>
       <el-table-column prop="status" label="状态" width="100">
         <template #default="{ row }">
-          <el-tag :type="statusTagType(row.status)" size="small">{{ statusLabel(row.status) }}</el-tag>
+          <el-tag :type="proxy?.selectDictLabel(doc_document_status.value, row.status)?.cssClass || 'info'" size="small">
+            {{ proxy?.selectDictLabel(doc_document_status.value, row.status)?.label || row.status }}
+          </el-tag>
         </template>
       </el-table-column>
       <el-table-column prop="nasPath" label="存储路径" min-width="250" show-overflow-tooltip />
       <el-table-column prop="generatedAt" label="生成时间" width="180" />
       <el-table-column label="操作" align="center" width="160" class-name="small-padding fixed-width">
         <template #default="{ row }">
-          <el-button
-            v-hasPermi="['docman:document:download']"
-            size="small"
-            type="primary"
-            link
-            icon="Download"
-            @click="handleDownload(row)"
-          >下载</el-button>
-          <el-button
-            v-hasPermi="['docman:document:delete']"
-            size="small"
-            type="danger"
-            link
-            icon="Delete"
-            @click="handleDelete(row)"
-          >删除</el-button>
+          <el-button v-hasPermi="['docman:document:download']" size="small" type="primary" plain @click="handleDownload(row)">下载</el-button>
+          <el-button v-hasPermi="['docman:document:delete']" size="small" type="danger" plain @click="handleDelete(row)">删除</el-button>
         </template>
       </el-table-column>
     </el-table>
@@ -80,11 +68,14 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, reactive } from 'vue';
+import { ref, onMounted, reactive, toRefs, getCurrentInstance, ComponentInternalInstance } from 'vue';
 import { useRoute } from 'vue-router';
-import { listDocument, uploadDocument, deleteDocument } from '@/api/docman/document';
+import { listDocument, uploadDocument, downloadDocument, deleteDocument } from '@/api/docman/document';
 import { DocDocumentRecord, DocDocumentQuery, PageResult } from '@/api/docman/types';
 import { ElMessage, ElMessageBox, UploadInstance, UploadRequestOptions } from 'element-plus';
+
+const { proxy } = getCurrentInstance() as ComponentInternalInstance;
+const { doc_source_type, doc_document_status } = toRefs(proxy?.useDict('doc_source_type', 'doc_document_status') ?? {});
 
 const route = useRoute();
 const projectId = ref(Number(route.query.projectId));
@@ -111,20 +102,18 @@ const getList = async () => {
 
 /** 下载按钮操作 */
 const handleDownload = (row: DocDocumentRecord) => {
-  window.open(`/api/docman/document/${row.id}/download`, '_blank');
+  downloadDocument(row.id);
 };
 
 /** 删除按钮操作 */
 const handleDelete = async (row: DocDocumentRecord) => {
+  await ElMessageBox.confirm(`确认删除文档「${row.fileName}」？`, '提示', { type: 'warning' });
   try {
-    await ElMessageBox.confirm(`确认删除文档「${row.fileName}」？`, '提示', {
-      type: 'warning'
-    });
     await deleteDocument(row.id);
     ElMessage.success('删除成功');
     getList();
-  } catch (error) {
-    // 用户取消删除
+  } catch {
+    ElMessage.error('删除失败，请重试');
   }
 };
 
@@ -138,7 +127,7 @@ async function submitUpload(options: UploadRequestOptions) {
   const formData = new FormData();
   formData.append('file', options.file);
   formData.append('projectId', String(projectId.value));
-  
+
   upload.isUploading = true;
   try {
     await uploadDocument(formData);
@@ -160,34 +149,6 @@ function submitFileForm() {
 /** 对话框关闭清理 */
 function handleClose() {
   uploadRef.value?.clearFiles();
-}
-
-const statusTagType = (status: string): 'info' | 'success' | 'warning' | 'danger' | '' => {
-  const map: Record<string, 'info' | 'success' | 'warning' | 'danger' | ''> = {
-    draft: 'info',
-    active: 'success',
-    pending: 'warning',
-    running: 'warning',
-    failed: 'danger',
-    obsolete: '',
-    generated: 'primary',
-    archived: 'success'
-  };
-  return map[status] ?? 'info';
-};
-
-function statusLabel(s: string) {
-  const map: Record<string, string> = {
-    draft: '草稿',
-    active: '激活',
-    pending: '待生成',
-    running: '生成中',
-    failed: '失败',
-    obsolete: '作废',
-    generated: '已生成',
-    archived: '已归档'
-  };
-  return map[s] || s;
 }
 
 onMounted(() => getList());

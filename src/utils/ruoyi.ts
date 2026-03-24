@@ -68,6 +68,9 @@ export const selectDictLabel = (datas: any, value: number | string) => {
   if (value === undefined) {
     return '';
   }
+  if (!datas || typeof datas !== 'object') {
+    return String(value);
+  }
   const actions: Array<string | number> = [];
   Object.keys(datas).some((key) => {
     if (datas[key].value == '' + value) {
@@ -85,6 +88,9 @@ export const selectDictLabel = (datas: any, value: number | string) => {
 export const selectDictLabels = (datas: any, value: any, separator: any) => {
   if (value === undefined || value.length === 0) {
     return '';
+  }
+  if (!datas || typeof datas !== 'object') {
+    return Array.isArray(value) ? value.join(separator ?? ',') : String(value);
   }
   if (Array.isArray(value)) {
     value = value.join(',');
