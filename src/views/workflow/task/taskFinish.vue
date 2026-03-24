@@ -1,5 +1,6 @@
 <template>
   <div class="p-2">
+    <el-alert v-if="loadError" :title="loadError" type="warning" show-icon :closable="false" class="mb-[10px]" />
     <transition :enter-active-class="proxy?.animate.searchAnimate.enter" :leave-active-class="proxy?.animate.searchAnimate.leave">
       <div v-show="showSearch" class="mb-[10px]">
         <el-card shadow="hover">
@@ -88,6 +89,7 @@ import { pageByTaskFinish } from '@/api/workflow/task';
 import { TaskQuery, FlowTaskVO } from '@/api/workflow/task/types';
 import workflowCommon from '@/api/workflow/workflowCommon';
 import { RouterJumpVo } from '@/api/workflow/workflowCommon/types';
+import { ElMessage } from 'element-plus';
 //审批记录组件
 const queryFormRef = ref<ElFormInstance>();
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
@@ -112,6 +114,7 @@ const showSearch = ref(true);
 const total = ref(0);
 // 模型定义表格数据
 const taskList = ref([]);
+const loadError = ref('');
 // 查询参数
 const queryParams = ref<TaskQuery>({
   pageNum: 1,
@@ -145,13 +148,28 @@ const handleSelectionChange = (selection: any) => {
   single.value = selection.length !== 1;
   multiple.value = !selection.length;
 };
-const getFinishList = () => {
+const getFinishList = async () => {
   loading.value = true;
-  pageByTaskFinish(queryParams.value).then((resp) => {
+  loadError.value = '';
+  try {
+    const resp = await pageByTaskFinish(queryParams.value);
     taskList.value = resp.rows;
     total.value = resp.total;
+  } catch (error) {
+    taskList.value = [];
+    total.value = 0;
+    if (!isSessionError(error)) {
+      loadError.value = '已办任务加载失败，请刷新后重试';
+      ElMessage.error(loadError.value);
+    }
+  } finally {
     loading.value = false;
-  });
+  }
+};
+
+const isSessionError = (error: unknown) => {
+  const message = error instanceof Error ? error.message : String(error ?? '');
+  return message.includes('无效的会话') || message.includes('会话已过期');
 };
 /** 查看按钮操作 */
 const handleView = (row: FlowTaskVO) => {
