@@ -8,6 +8,7 @@
       <el-tabs v-model="activeTab">
         <!-- ==================== Tab 1：节点时限配置 ==================== -->
         <el-tab-pane label="节点时限配置" name="duration">
+          <el-alert v-if="durationLoadError" :title="durationLoadError" type="warning" show-icon :closable="false" style="margin-bottom: 16px" />
           <el-form :inline="true" style="margin-bottom: 16px">
             <el-form-item label="流程模板">
               <el-select v-model="selectedDefinitionId" placeholder="请选择流程模板" @change="handleDefinitionChange">
@@ -36,6 +37,7 @@
 
         <!-- ==================== Tab 2：截止日期列表 ==================== -->
         <el-tab-pane label="截止日期列表" name="deadline">
+          <el-alert v-if="deadlineLoadError" :title="deadlineLoadError" type="warning" show-icon :closable="false" style="margin-bottom: 16px" />
           <el-form :inline="true" style="margin-bottom: 16px">
             <el-form-item label="项目">
               <el-select v-model="selectedProjectId" filterable placeholder="请选择项目" @change="handleProjectChange">
@@ -115,6 +117,7 @@ import {
   type NodeDurationVo,
   type NodeDeadlineVo
 } from '@/api/docman/nodedeadline';
+import { handleApiError } from '@/utils/error';
 
 /* ======================== 公共 ======================== */
 const activeTab = ref('duration');
@@ -124,19 +127,22 @@ const definitionList = ref<Array<{ id: number; name: string }>>([]);
 const selectedDefinitionId = ref<number>();
 const nodeList = ref<NodeDurationVo[]>([]);
 const durationLoading = ref(false);
+const durationLoadError = ref('');
 
 const loadDefinitions = async () => {
   try {
     const res = await listProcessDefinitions();
     definitionList.value = res.data;
   } catch (e) {
-    ElMessage.error('获取流程模板失败');
+    definitionList.value = [];
+    handleApiError(e, '获取流程模板失败');
   }
 };
 
 const handleDefinitionChange = async (defId: number) => {
   if (!defId) return;
   durationLoading.value = true;
+  durationLoadError.value = '';
   try {
     const res = await listNodesByDefinition(defId);
     nodeList.value = (res.data || []).map((n: NodeDurationVo) => ({
@@ -144,7 +150,8 @@ const handleDefinitionChange = async (defId: number) => {
       durationDays: n.durationDays ?? 0
     }));
   } catch (e) {
-    ElMessage.error('获取节点列表失败');
+    nodeList.value = [];
+    durationLoadError.value = handleApiError(e, '获取节点列表失败');
   } finally {
     durationLoading.value = false;
   }
@@ -172,7 +179,7 @@ const handleSaveDuration = async () => {
     durationDialogVisible.value = false;
     handleDefinitionChange(selectedDefinitionId.value!);
   } catch (e) {
-    ElMessage.error('保存失败，请重试');
+    handleApiError(e, '保存失败，请重试');
   } finally {
     durationSaving.value = false;
   }
@@ -183,24 +190,28 @@ const projectList = ref<Array<{ id: number; name: string }>>([]);
 const selectedProjectId = ref<number>();
 const deadlineList = ref<NodeDeadlineVo[]>([]);
 const deadlineLoading = ref(false);
+const deadlineLoadError = ref('');
 
 const loadProjects = async () => {
   try {
     const res = (await listProject({ pageNum: 1, pageSize: 1000 } as any)) as any;
     projectList.value = (res?.rows || []).map((p: any) => ({ id: p.id, name: p.name }));
   } catch (e) {
-    ElMessage.error('获取项目列表失败');
+    projectList.value = [];
+    handleApiError(e, '获取项目列表失败');
   }
 };
 
 const handleProjectChange = async (projectId: number) => {
   if (!projectId) return;
   deadlineLoading.value = true;
+  deadlineLoadError.value = '';
   try {
     const res = await listNodeDeadlines(projectId);
     deadlineList.value = res.data || [];
   } catch (e) {
-    ElMessage.error('获取截止日期失败');
+    deadlineList.value = [];
+    deadlineLoadError.value = handleApiError(e, '获取截止日期失败');
   } finally {
     deadlineLoading.value = false;
   }
@@ -238,7 +249,7 @@ const handleSaveDeadline = async () => {
     deadlineDialogVisible.value = false;
     handleProjectChange(selectedProjectId.value!);
   } catch (e) {
-    ElMessage.error('修改截止日期失败，请重试');
+    handleApiError(e, '修改截止日期失败，请重试');
   } finally {
     deadlineSaving.value = false;
   }

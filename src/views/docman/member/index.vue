@@ -8,6 +8,8 @@
         </div>
       </template>
 
+      <el-alert v-if="loadError" :title="loadError" type="warning" show-icon :closable="false" class="mb-4" />
+
       <el-table :data="memberList" v-loading="loading" :row-key="(row) => row.id" data-testid="member-table">
         <el-table-column prop="userId" label="用户ID" width="120" />
         <el-table-column prop="roleType" label="角色" width="120">
@@ -51,6 +53,7 @@ import { ref, onMounted, toRefs, getCurrentInstance, ComponentInternalInstance }
 import { useRoute } from 'vue-router';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { listMembers, addMember, removeMember, type DocProjectMember, type DocProjectMemberBo } from '@/api/docman/member';
+import { handleApiError } from '@/utils/error';
 
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 const { doc_member_role } = toRefs(proxy?.useDict('doc_member_role') ?? {});
@@ -62,15 +65,18 @@ const loading = ref<boolean>(false);
 const submitLoading = ref<boolean>(false);
 const dialogVisible = ref<boolean>(false);
 const memberList = ref<DocProjectMember[]>([]);
+const loadError = ref('');
 const form = ref<DocProjectMemberBo>({ userId: 0, roleType: 'viewer' });
 
 const getList = async () => {
   loading.value = true;
+  loadError.value = '';
   try {
     const res = await listMembers(projectId);
     memberList.value = res.data;
-  } catch {
-    ElMessage.error('获取成员列表失败');
+  } catch (error) {
+    memberList.value = [];
+    loadError.value = handleApiError(error, '获取成员列表失败');
   } finally {
     loading.value = false;
   }
@@ -92,8 +98,8 @@ const handleSubmit = async () => {
     ElMessage.success('添加成功');
     dialogVisible.value = false;
     getList();
-  } catch {
-    ElMessage.error('添加失败');
+  } catch (error) {
+    handleApiError(error, '添加失败');
   } finally {
     submitLoading.value = false;
   }
@@ -105,8 +111,8 @@ const handleRemove = async (row: DocProjectMember) => {
     await removeMember(projectId, row.userId);
     ElMessage.success('移除成功');
     getList();
-  } catch {
-    ElMessage.error('移除失败');
+  } catch (error) {
+    handleApiError(error, '移除失败');
   }
 };
 

@@ -1,5 +1,6 @@
 <template>
   <div class="app-container" data-testid="workspace-project-page">
+    <el-alert v-if="loadError" :title="loadError" type="warning" show-icon :closable="false" class="workspace-query" />
     <el-form ref="queryRef" :model="queryParams" :inline="true" class="workspace-query">
       <el-form-item label="项目名称" prop="name">
         <el-input v-model="queryParams.name" placeholder="请输入项目名称" clearable @keyup.enter="loadProjects" />
@@ -67,6 +68,7 @@ import { useRouter } from 'vue-router';
 import { ElMessage } from 'element-plus';
 import { listMyProject } from '@/api/docman/project';
 import type { DocProject, DocProjectQuery } from '@/api/docman/types';
+import { handleApiError } from '@/utils/error';
 
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 const router = useRouter();
@@ -76,6 +78,7 @@ const { doc_customer_type, doc_business_type, doc_project_status } = toRefs<any>
 
 const queryRef = ref<ElFormInstance>();
 const loading = ref(false);
+const loadError = ref('');
 const projectList = ref<DocProject[]>([]);
 
 const queryParams = reactive<Partial<DocProjectQuery>>({
@@ -101,11 +104,13 @@ const getBusinessTypeLabel = (value?: string) => resolveDictOption(doc_business_
 
 const loadProjects = async () => {
   loading.value = true;
+  loadError.value = '';
   try {
     const res = await listMyProject(queryParams);
     projectList.value = res.data || [];
   } catch (error) {
-    ElMessage.error('项目数据加载失败');
+    projectList.value = [];
+    loadError.value = handleApiError(error, '项目数据加载失败');
   } finally {
     loading.value = false;
   }

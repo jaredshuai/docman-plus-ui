@@ -1,5 +1,6 @@
 <template>
   <div class="app-container" v-loading="loading" data-testid="dashboard-page">
+    <el-alert v-if="loadError" :title="loadError" type="warning" show-icon :closable="false" class="dashboard-row" />
     <!-- 第一行：概览数据卡片 -->
     <el-row :gutter="16" class="dashboard-row" data-testid="stat-cards-row">
       <el-col :xs="24" :sm="12" :md="6">
@@ -167,8 +168,10 @@ import {
   type DeadlineAlert,
   type PluginStats
 } from '@/api/docman/dashboard';
+import { handleApiError } from '@/utils/error';
 
 const loading = ref(true);
+const loadError = ref('');
 
 const overview = ref<DashboardOverview>({
   totalProjects: 0,
@@ -186,6 +189,7 @@ const pluginStatsList = ref<PluginStats[]>([]);
 /** 加载数据 */
 const loadDashboard = async () => {
   loading.value = true;
+  loadError.value = '';
   try {
     const [overviewRes, progressRes, deadlineRes, pluginRes] = await Promise.all([
       getOverview(),
@@ -198,7 +202,7 @@ const loadDashboard = async () => {
     deadlineAlertList.value = deadlineRes.data || [];
     pluginStatsList.value = pluginRes.data || [];
   } catch (e) {
-    ElMessage.error('仪表盘数据加载失败');
+    loadError.value = handleApiError(e, '仪表盘数据加载失败');
   } finally {
     loading.value = false;
   }
