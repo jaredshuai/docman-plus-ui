@@ -81,6 +81,7 @@ import { ElMessage } from 'element-plus';
 import { VxeTableInstance } from 'vxe-table';
 import useDialog from '@/hooks/useDialog';
 import api from '@/api/system/role';
+import { handleApiError } from '@/utils/error';
 interface PropType {
   modelValue?: RoleVO[] | RoleVO | undefined;
   multiple?: boolean;
@@ -156,10 +157,7 @@ const getList = () => {
     .catch((error) => {
       roleList.value = [];
       total.value = 0;
-      if (!isSessionError(error)) {
-        loadError.value = '角色列表加载失败，请刷新后重试';
-        ElMessage.error(loadError.value);
-      }
+      loadError.value = handleApiError(error, '角色列表加载失败，请刷新后重试');
     })
     .finally(() => {
       loading.value = false;
@@ -240,9 +238,7 @@ const initSelectRole = async () => {
       });
     } catch (error) {
       selectRoleList.value = [];
-      if (!isSessionError(error)) {
-        ElMessage.error('默认选中角色加载失败，请稍后重试');
-      }
+      handleApiError(error, '默认选中角色加载失败，请稍后重试');
     }
   }
 };
@@ -273,9 +269,4 @@ defineExpose({
   open: roleDialog.openDialog,
   close: roleDialog.closeDialog
 });
-
-const isSessionError = (error: unknown) => {
-  const message = error instanceof Error ? error.message : String(error ?? '');
-  return message.includes('无效的会话') || message.includes('会话已过期');
-};
 </script>

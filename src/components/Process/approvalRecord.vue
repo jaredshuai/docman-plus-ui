@@ -65,6 +65,7 @@ import { propTypes } from '@/utils/propTypes';
 import { listByIds } from '@/api/system/oss';
 import FlowChart from '@/components/Process/flowChart.vue';
 import { ElMessage } from 'element-plus';
+import { handleApiError } from '@/utils/error';
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 const { wf_task_status } = toRefs<any>(proxy?.useDict('wf_task_status'));
 const props = defineProps({
@@ -110,10 +111,7 @@ const init = async (businessId: string | number) => {
   } catch (error) {
     historyList.value = [];
     insId.value = null;
-    if (!isSessionError(error)) {
-      loadError.value = '审批记录加载失败，请关闭后重试';
-      ElMessage.error(loadError.value);
-    }
+    loadError.value = handleApiError(error, '审批记录加载失败，请关闭后重试');
   } finally {
     loading.value = false;
   }
@@ -134,11 +132,6 @@ const handleDownload = (ossId: string) => {
 defineExpose({
   init
 });
-
-const isSessionError = (error: unknown) => {
-  const message = error instanceof Error ? error.message : String(error ?? '');
-  return message.includes('无效的会话') || message.includes('会话已过期');
-};
 </script>
 <style lang="scss" scoped>
 .container {

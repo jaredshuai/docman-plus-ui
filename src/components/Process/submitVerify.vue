@@ -157,6 +157,7 @@ import UserSelect from '@/components/UserSelect';
 
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 import { FlowCopyVo, FlowTaskVO, TaskOperationBo } from '@/api/workflow/task/types';
+import { handleApiError } from '@/utils/error';
 
 const userSelectCopyRef = ref<InstanceType<typeof UserSelect>>();
 const transferTaskRef = ref<InstanceType<typeof UserSelect>>();
@@ -284,10 +285,7 @@ const openDialog = async (id?: string) => {
     buttonDisabled.value = false;
   } catch (error) {
     buttonDisabled.value = false;
-    if (!isSessionError(error)) {
-      loadError.value = '审批弹窗加载失败，请关闭后重试';
-      ElMessage.error(loadError.value);
-    }
+    loadError.value = handleApiError(error, '审批弹窗加载失败，请关闭后重试');
   } finally {
     loading.value = false;
   }
@@ -358,9 +356,7 @@ const handleBackProcessOpen = async () => {
   } catch (error) {
     taskNodeList.value = [];
     backVisible.value = false;
-    if (!isSessionError(error)) {
-      ElMessage.error('驳回节点加载失败，请稍后重试');
-    }
+    handleApiError(error, '驳回节点加载失败，请稍后重试');
   } finally {
     backLoading.value = false;
     backButtonDisabled.value = false;
@@ -536,9 +532,7 @@ const handleTaskUser = async () => {
     deleteSignatureVisible.value = true;
   } catch (error) {
     deleteUserList.value = [];
-    if (!isSessionError(error)) {
-      ElMessage.error('减签人员加载失败，请稍后重试');
-    }
+    handleApiError(error, '减签人员加载失败，请稍后重试');
   }
 };
 // 选择人员
@@ -568,9 +562,4 @@ const handlePopUser = async (userList) => {
 defineExpose({
   openDialog
 });
-
-const isSessionError = (error: unknown) => {
-  const message = error instanceof Error ? error.message : String(error ?? '');
-  return message.includes('无效的会话') || message.includes('会话已过期');
-};
 </script>

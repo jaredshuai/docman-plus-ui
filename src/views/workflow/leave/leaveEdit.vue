@@ -64,6 +64,7 @@ import ApprovalButton from '@/components/Process/approvalButton.vue';
 import { AxiosResponse } from 'axios';
 import { StartProcessBo } from '@/api/workflow/workflowCommon/types';
 import { ElMessage } from 'element-plus';
+import { handleApiError } from '@/utils/error';
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 
 const buttonLoading = ref(false);
@@ -188,10 +189,7 @@ const getInfo = () => {
       leaveTime.value.push(form.value.startDate);
       leaveTime.value.push(form.value.endDate);
     } catch (error) {
-      if (!isSessionError(error)) {
-        loadError.value = '请假单详情加载失败，请返回列表后重试';
-        ElMessage.error(loadError.value);
-      }
+      loadError.value = handleApiError(error, '请假单详情加载失败，请返回列表后重试');
     } finally {
       loading.value = false;
       buttonLoading.value = false;
@@ -221,10 +219,7 @@ const submitForm = (status: string, mode: boolean) => {
             proxy.$tab.closePage(proxy.$route);
             proxy.$router.go(-1);
           } catch (error) {
-            if (!isSessionError(error)) {
-              loadError.value = '请假流程提交失败，请稍后重试';
-              ElMessage.error(loadError.value);
-            }
+            loadError.value = handleApiError(error, '请假流程提交失败，请稍后重试');
           } finally {
             buttonLoading.value = false;
           }
@@ -245,10 +240,7 @@ const submitForm = (status: string, mode: boolean) => {
               await handleStartWorkFlow(res.data);
             }
           } catch (error) {
-            if (!isSessionError(error)) {
-              loadError.value = '请假单保存失败，请稍后重试';
-              ElMessage.error(loadError.value);
-            }
+            loadError.value = handleApiError(error, '请假单保存失败，请稍后重试');
           } finally {
             buttonLoading.value = false;
           }
@@ -285,10 +277,7 @@ const handleStartWorkFlow = async (data: LeaveForm) => {
       submitVerifyRef.value.openDialog(resp.data.taskId);
     }
   } catch (error) {
-    if (!isSessionError(error)) {
-      loadError.value = '流程发起失败，请稍后重试';
-      ElMessage.error(loadError.value);
-    }
+    loadError.value = handleApiError(error, '流程发起失败，请稍后重试');
   } finally {
     buttonLoading.value = false;
   }
@@ -317,9 +306,4 @@ onMounted(() => {
     }
   });
 });
-
-const isSessionError = (error: unknown) => {
-  const message = error instanceof Error ? error.message : String(error ?? '');
-  return message.includes('无效的会话') || message.includes('会话已过期');
-};
 </script>

@@ -57,6 +57,7 @@ import UserSelect from '@/components/UserSelect';
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 import { getTask, taskOperation, currentTaskAllUser, terminationTask } from '@/api/workflow/task';
 import { ElMessage } from 'element-plus';
+import { handleApiError } from '@/utils/error';
 const props = defineProps({
   width: propTypes.string.def('50%'),
   height: propTypes.string.def('100%')
@@ -109,10 +110,7 @@ const open = (taskId: string) => {
     })
     .catch((error) => {
       buttonDisabled.value = false;
-      if (!isSessionError(error)) {
-        loadError.value = '流程干预数据加载失败，请关闭后重试';
-        ElMessage.error(loadError.value);
-      }
+      loadError.value = handleApiError(error, '流程干预数据加载失败，请关闭后重试');
     })
     .finally(() => {
       loading.value = false;
@@ -202,9 +200,7 @@ const handleTaskUser = async () => {
     deleteSignatureVisible.value = true;
   } catch (error) {
     deleteUserList.value = [];
-    if (!isSessionError(error)) {
-      ElMessage.error('减签人员加载失败，请稍后重试');
-    }
+    handleApiError(error, '减签人员加载失败，请稍后重试');
   }
 };
 
@@ -231,9 +227,4 @@ const handleTerminationTask = async () => {
 defineExpose({
   open
 });
-
-const isSessionError = (error: unknown) => {
-  const message = error instanceof Error ? error.message : String(error ?? '');
-  return message.includes('无效的会话') || message.includes('会话已过期');
-};
 </script>

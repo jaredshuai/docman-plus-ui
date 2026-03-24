@@ -105,6 +105,7 @@ import { DeptTreeVO, DeptVO } from '@/api/system/dept/types';
 import { ElMessage } from 'element-plus';
 import { VxeTableInstance } from 'vxe-table';
 import useDialog from '@/hooks/useDialog';
+import { handleApiError } from '@/utils/error';
 
 interface PropType {
   modelValue?: UserVO[] | UserVO | undefined;
@@ -199,9 +200,7 @@ const getTreeSelect = async () => {
     deptOptions.value = res.data;
   } catch (error) {
     deptOptions.value = [];
-    if (!isSessionError(error)) {
-      ElMessage.error('部门树加载失败，请稍后重试');
-    }
+    handleApiError(error, '部门树加载失败，请稍后重试');
   }
 };
 
@@ -217,10 +216,7 @@ const getList = async () => {
   } catch (error) {
     userList.value = [];
     total.value = 0;
-    if (!isSessionError(error)) {
-      loadError.value = '用户列表加载失败，请刷新后重试';
-      ElMessage.error(loadError.value);
-    }
+    loadError.value = handleApiError(error, '用户列表加载失败，请刷新后重试');
   } finally {
     loading.value = false;
   }
@@ -306,9 +302,7 @@ const initSelectUser = async () => {
       });
     } catch (error) {
       selectUserList.value = [];
-      if (!isSessionError(error)) {
-        ElMessage.error('默认选中用户加载失败，请稍后重试');
-      }
+      handleApiError(error, '默认选中用户加载失败，请稍后重试');
     }
   }
 };
@@ -333,11 +327,6 @@ watch(
     }
   }
 );
-
-const isSessionError = (error: unknown) => {
-  const message = error instanceof Error ? error.message : String(error ?? '');
-  return message.includes('无效的会话') || message.includes('会话已过期');
-};
 
 defineExpose({
   open: userDialog.openDialog,

@@ -87,6 +87,7 @@ import { TaskQuery, FlowTaskVO } from '@/api/workflow/task/types';
 import workflowCommon from '@/api/workflow/workflowCommon';
 import { RouterJumpVo } from '@/api/workflow/workflowCommon/types';
 import { ElMessage } from 'element-plus';
+import { handleApiError } from '@/utils/error';
 
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 const { wf_business_status } = toRefs<any>(proxy?.useDict('wf_business_status'));
@@ -160,18 +161,10 @@ const getWaitingList = async () => {
   } catch (error) {
     taskList.value = [];
     total.value = 0;
-    if (!isSessionError(error)) {
-      loadError.value = '待办任务加载失败，请刷新后重试';
-      ElMessage.error(loadError.value);
-    }
+    loadError.value = handleApiError(error, '待办任务加载失败，请刷新后重试');
   } finally {
     loading.value = false;
   }
-};
-
-const isSessionError = (error: unknown) => {
-  const message = error instanceof Error ? error.message : String(error ?? '');
-  return message.includes('无效的会话') || message.includes('会话已过期');
 };
 //办理
 const handleOpen = async (row: FlowTaskVO) => {

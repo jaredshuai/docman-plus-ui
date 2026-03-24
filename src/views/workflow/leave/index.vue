@@ -93,6 +93,7 @@ import { delLeave, listLeave } from '@/api/workflow/leave';
 import { cancelProcessApply } from '@/api/workflow/instance';
 import { LeaveForm, LeaveQuery, LeaveVO } from '@/api/workflow/leave/types';
 import { ElMessage } from 'element-plus';
+import { handleApiError } from '@/utils/error';
 
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 const { wf_business_status } = toRefs<any>(proxy?.useDict('wf_business_status'));
@@ -149,10 +150,7 @@ const getList = async () => {
   } catch (error) {
     leaveList.value = [];
     total.value = 0;
-    if (!isSessionError(error)) {
-      loadError.value = '请假单列表加载失败，请刷新后重试';
-      ElMessage.error(loadError.value);
-    }
+    loadError.value = handleApiError(error, '请假单列表加载失败，请刷新后重试');
   } finally {
     loading.value = false;
   }
@@ -243,11 +241,6 @@ const handleCancelProcessApply = async (id: string) => {
   await cancelProcessApply(data).finally(() => (loading.value = false));
   await getList();
   proxy?.$modal.msgSuccess('撤销成功');
-};
-
-const isSessionError = (error: unknown) => {
-  const message = error instanceof Error ? error.message : String(error ?? '');
-  return message.includes('无效的会话') || message.includes('会话已过期');
 };
 
 onMounted(() => {

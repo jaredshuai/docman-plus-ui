@@ -202,6 +202,7 @@ import VueJsonPretty from 'vue-json-pretty';
 import 'vue-json-pretty/lib/styles.css';
 import UserSelect from '@/components/UserSelect/index.vue';
 import { ElForm, ElMessage, FormInstance } from 'element-plus';
+import { handleApiError } from '@/utils/error';
 //审批记录组件
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 const { wf_business_status } = toRefs<any>(proxy?.useDict('wf_business_status'));
@@ -306,9 +307,7 @@ const getTreeselect = async () => {
     categoryOptions.value = res.data;
   } catch (error) {
     categoryOptions.value = [];
-    if (!isSessionError(error)) {
-      ElMessage.error('流程分类加载失败，请刷新后重试');
-    }
+    handleApiError(error, '流程分类加载失败，请刷新后重试');
   }
 };
 
@@ -348,10 +347,7 @@ const getProcessInstanceRunningList = async () => {
   } catch (error) {
     processInstanceList.value = [];
     total.value = 0;
-    if (!isSessionError(error)) {
-      loadError.value = '运行中流程加载失败，请刷新后重试';
-      ElMessage.error(loadError.value);
-    }
+    loadError.value = handleApiError(error, '运行中流程加载失败，请刷新后重试');
   } finally {
     loading.value = false;
   }
@@ -367,17 +363,10 @@ const getProcessInstanceFinishList = async () => {
   } catch (error) {
     processInstanceList.value = [];
     total.value = 0;
-    if (!isSessionError(error)) {
-      loadError.value = '已完成流程加载失败，请刷新后重试';
-      ElMessage.error(loadError.value);
-    }
+    loadError.value = handleApiError(error, '已完成流程加载失败，请刷新后重试');
   } finally {
     loading.value = false;
   }
-};
-const isSessionError = (error: unknown) => {
-  const message = error instanceof Error ? error.message : String(error ?? '');
-  return message.includes('无效的会话') || message.includes('会话已过期');
 };
 
 /** 删除按钮操作 */

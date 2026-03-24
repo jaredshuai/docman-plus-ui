@@ -93,6 +93,7 @@
 import { listCategory, getCategory, delCategory, addCategory, updateCategory } from '@/api/workflow/category';
 import { CategoryVO, CategoryQuery, CategoryForm } from '@/api/workflow/category/types';
 import { ElMessage } from 'element-plus';
+import { handleApiError } from '@/utils/error';
 
 type CategoryOption = {
   categoryId: number;
@@ -150,10 +151,7 @@ const getList = async () => {
     categoryList.value = data || [];
   } catch (error) {
     categoryList.value = [];
-    if (!isSessionError(error)) {
-      loadError.value = '流程分类列表加载失败，请刷新后重试';
-      ElMessage.error(loadError.value);
-    }
+    loadError.value = handleApiError(error, '流程分类列表加载失败，请刷新后重试');
   } finally {
     loading.value = false;
   }
@@ -168,14 +166,8 @@ const getTreeselect = async () => {
     categoryOptions.value = data || [];
   } catch (error) {
     categoryOptions.value = [];
-    if (!isSessionError(error)) {
-      ElMessage.error('流程分类树加载失败，请刷新后重试');
-    }
+    handleApiError(error, '流程分类树加载失败，请刷新后重试');
   }
-};
-const isSessionError = (error: unknown) => {
-  const message = error instanceof Error ? error.message : String(error ?? '');
-  return message.includes('无效的会话') || message.includes('会话已过期');
 };
 
 // 取消按钮

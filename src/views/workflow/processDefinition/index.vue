@@ -214,6 +214,7 @@ import { CategoryTreeVO } from '@/api/workflow/category/types';
 import { FlowDefinitionQuery, FlowDefinitionVo, FlowDefinitionForm } from '@/api/workflow/definition/types';
 import { ElMessage, UploadRequestOptions, TabsPaneContext } from 'element-plus';
 import { ElMessageBoxOptions } from 'element-plus/es/components/message-box/src/message-box.type';
+import { handleApiError } from '@/utils/error';
 
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 
@@ -323,9 +324,7 @@ const getTreeselect = async () => {
     categoryOptions.value = res.data;
   } catch (error) {
     categoryOptions.value = [];
-    if (!isSessionError(error)) {
-      ElMessage.error('流程分类加载失败，请刷新后重试');
-    }
+    handleApiError(error, '流程分类加载失败，请刷新后重试');
   }
 };
 const handleClick = (tab: TabsPaneContext, event: Event) => {
@@ -381,10 +380,7 @@ const getList = async () => {
   } catch (error) {
     processDefinitionList.value = [];
     total.value = 0;
-    if (!isSessionError(error)) {
-      loadError.value = '流程定义列表加载失败，请刷新后重试';
-      ElMessage.error(loadError.value);
-    }
+    loadError.value = handleApiError(error, '流程定义列表加载失败，请刷新后重试');
   } finally {
     loading.value = false;
   }
@@ -400,17 +396,10 @@ const getUnPublishList = async () => {
   } catch (error) {
     processDefinitionList.value = [];
     total.value = 0;
-    if (!isSessionError(error)) {
-      loadError.value = '未发布流程列表加载失败，请刷新后重试';
-      ElMessage.error(loadError.value);
-    }
+    loadError.value = handleApiError(error, '未发布流程列表加载失败，请刷新后重试');
   } finally {
     loading.value = false;
   }
-};
-const isSessionError = (error: unknown) => {
-  const message = error instanceof Error ? error.message : String(error ?? '');
-  return message.includes('无效的会话') || message.includes('会话已过期');
 };
 
 /** 删除按钮操作 */

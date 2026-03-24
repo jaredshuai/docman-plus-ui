@@ -157,6 +157,7 @@
 import { listSpel, getSpel, delSpel, addSpel, updateSpel } from '@/api/workflow/spel';
 import { SpelVO, SpelQuery, SpelForm } from '@/api/workflow/spel/types';
 import { ElMessage } from 'element-plus';
+import { handleApiError } from '@/utils/error';
 
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 const { sys_show_hide, sys_normal_disable } = toRefs<any>(proxy?.useDict('sys_show_hide', 'sys_normal_disable'));
@@ -218,17 +219,10 @@ const getList = async () => {
   } catch (error) {
     spelList.value = [];
     total.value = 0;
-    if (!isSessionError(error)) {
-      loadError.value = 'SPEL 列表加载失败，请刷新后重试';
-      ElMessage.error(loadError.value);
-    }
+    loadError.value = handleApiError(error, 'SPEL 列表加载失败，请刷新后重试');
   } finally {
     loading.value = false;
   }
-};
-const isSessionError = (error: unknown) => {
-  const message = error instanceof Error ? error.message : String(error ?? '');
-  return message.includes('无效的会话') || message.includes('会话已过期');
 };
 
 /** 取消按钮 */

@@ -137,6 +137,7 @@ import { archiveProject } from '@/api/docman/archive';
 import { DocProject, DocProjectQuery, DocProjectForm, PageResult } from '@/api/docman/types';
 import { ElMessage } from 'element-plus';
 import { useUserStore } from '@/store/modules/user';
+import { handleApiError } from '@/utils/error';
 
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 const router = useRouter();
@@ -197,10 +198,7 @@ const getList = async () => {
   } catch (error) {
     projectList.value = [];
     total.value = 0;
-    if (!isSessionError(error)) {
-      loadError.value = '项目列表加载失败，请刷新后重试';
-      ElMessage.error(loadError.value);
-    }
+    loadError.value = handleApiError(error, '项目列表加载失败，请刷新后重试');
   } finally {
     loading.value = false;
   }
@@ -316,18 +314,11 @@ function handleArchive(id: number) {
         proxy?.$modal.msgSuccess('归档成功');
         getList();
       } catch (error) {
-        if (!isSessionError(error)) {
-          ElMessage.error('归档失败，请稍后重试');
-        }
+        handleApiError(error, '归档失败，请稍后重试');
       }
     })
     .catch(() => {});
 }
-
-const isSessionError = (error: unknown) => {
-  const message = error instanceof Error ? error.message : String(error ?? '');
-  return message.includes('无效的会话') || message.includes('会话已过期');
-};
 
 onMounted(() => getList());
 </script>
