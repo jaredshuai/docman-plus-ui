@@ -1,5 +1,6 @@
 <template>
   <div class="p-2">
+    <el-alert v-if="loadError" :title="loadError" type="warning" show-icon :closable="false" class="mb-[10px]" />
     <transition :enter-active-class="proxy?.animate.searchAnimate.enter" :leave-active-class="proxy?.animate.searchAnimate.leave">
       <div v-show="showSearch" class="search">
         <el-form ref="queryFormRef" :model="queryParams" :inline="true">
@@ -91,6 +92,7 @@
 <script setup name="Category" lang="ts">
 import { listCategory, getCategory, delCategory, addCategory, updateCategory } from '@/api/workflow/category';
 import { CategoryVO, CategoryQuery, CategoryForm } from '@/api/workflow/category/types';
+import { ElMessage } from 'element-plus';
 
 type CategoryOption = {
   categoryId: number;
@@ -106,6 +108,7 @@ const buttonLoading = ref(false);
 const showSearch = ref(true);
 const isExpandAll = ref(true);
 const loading = ref(false);
+const loadError = ref('');
 
 const queryFormRef = ref<ElFormInstance>();
 const categoryFormRef = ref<ElFormInstance>();
@@ -140,23 +143,39 @@ const { queryParams, form, rules } = toRefs(data);
 /** 查询流程分类列表 */
 const getList = async () => {
   loading.value = true;
-  const res = await listCategory(queryParams.value);
-  const data = proxy?.handleTree<CategoryVO>(res.data, 'categoryId', 'parentId');
-  if (data) {
-    categoryList.value = data;
+  loadError.value = '';
+  try {
+    const res = await listCategory(queryParams.value);
+    const data = proxy?.handleTree<CategoryVO>(res.data, 'categoryId', 'parentId');
+    categoryList.value = data || [];
+  } catch (error) {
+    categoryList.value = [];
+    if (!isSessionError(error)) {
+      loadError.value = '流程分类列表加载失败，请刷新后重试';
+      ElMessage.error(loadError.value);
+    }
+  } finally {
     loading.value = false;
   }
 };
 
 /** 查询流程分类下拉树结构 */
 const getTreeselect = async () => {
-  const res = await listCategory();
-  categoryOptions.value = [];
-  // 处理树形数据
-  const data = proxy?.handleTree<CategoryOption>(res.data, 'categoryId', 'parentId');
-  if (data) {
-    categoryOptions.value = data; // 将处理后的树形数据赋值
+  try {
+    const res = await listCategory();
+    categoryOptions.value = [];
+    const data = proxy?.handleTree<CategoryOption>(res.data, 'categoryId', 'parentId');
+    categoryOptions.value = data || [];
+  } catch (error) {
+    categoryOptions.value = [];
+    if (!isSessionError(error)) {
+      ElMessage.error('流程分类树加载失败，请刷新后重试');
+    }
   }
+};
+const isSessionError = (error: unknown) => {
+  const message = error instanceof Error ? error.message : String(error ?? '');
+  return message.includes('无效的会话') || message.includes('会话已过期');
 };
 
 // 取消按钮

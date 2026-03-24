@@ -20,6 +20,7 @@
         </el-card>
       </el-col>
       <el-col :lg="20" :xs="24">
+        <el-alert v-if="loadError" :title="loadError" type="warning" show-icon :closable="false" class="mb-[10px]" />
         <transition :enter-active-class="proxy?.animate.searchAnimate.enter" :leave-active-class="proxy?.animate.searchAnimate.leave">
           <div v-show="showSearch" class="mb-[10px]">
             <el-card shadow="hover">
@@ -211,7 +212,7 @@ import { listDefinition, deleteDefinition, active, importDef, unPublishList, pub
 import { categoryTree } from '@/api/workflow/category';
 import { CategoryTreeVO } from '@/api/workflow/category/types';
 import { FlowDefinitionQuery, FlowDefinitionVo, FlowDefinitionForm } from '@/api/workflow/definition/types';
-import { UploadRequestOptions, TabsPaneContext } from 'element-plus';
+import { ElMessage, UploadRequestOptions, TabsPaneContext } from 'element-plus';
 import { ElMessageBoxOptions } from 'element-plus/es/components/message-box/src/message-box.type';
 
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
@@ -231,6 +232,7 @@ const processDefinitionList = ref<FlowDefinitionVo[]>([]);
 const categoryOptions = ref<CategoryTreeVO[]>([]);
 const categoryName = ref('');
 const autoPass = ref(false);
+const loadError = ref('');
 /** 部署文件分类选择 */
 const selectCategory = ref();
 const defFormRef = ref<ElFormInstance>();
@@ -316,8 +318,15 @@ watchEffect(
 
 /** 查询流程分类下拉树结构 */
 const getTreeselect = async () => {
-  const res = await categoryTree();
-  categoryOptions.value = res.data;
+  try {
+    const res = await categoryTree();
+    categoryOptions.value = res.data;
+  } catch (error) {
+    categoryOptions.value = [];
+    if (!isSessionError(error)) {
+      ElMessage.error('流程分类加载失败，请刷新后重试');
+    }
+  }
 };
 const handleClick = (tab: TabsPaneContext, event: Event) => {
   // v-model处理有延迟 需要手动处理
@@ -364,18 +373,44 @@ const getPageList = async () => {
 //分页
 const getList = async () => {
   loading.value = true;
-  const resp = await listDefinition(queryParams.value);
-  processDefinitionList.value = resp.rows;
-  total.value = resp.total;
-  loading.value = false;
+  loadError.value = '';
+  try {
+    const resp = await listDefinition(queryParams.value);
+    processDefinitionList.value = resp.rows;
+    total.value = resp.total;
+  } catch (error) {
+    processDefinitionList.value = [];
+    total.value = 0;
+    if (!isSessionError(error)) {
+      loadError.value = '流程定义列表加载失败，请刷新后重试';
+      ElMessage.error(loadError.value);
+    }
+  } finally {
+    loading.value = false;
+  }
 };
 //查询未发布的流程定义列表
 const getUnPublishList = async () => {
   loading.value = true;
-  const resp = await unPublishList(queryParams.value);
-  processDefinitionList.value = resp.rows;
-  total.value = resp.total;
-  loading.value = false;
+  loadError.value = '';
+  try {
+    const resp = await unPublishList(queryParams.value);
+    processDefinitionList.value = resp.rows;
+    total.value = resp.total;
+  } catch (error) {
+    processDefinitionList.value = [];
+    total.value = 0;
+    if (!isSessionError(error)) {
+      loadError.value = '未发布流程列表加载失败，请刷新后重试';
+      ElMessage.error(loadError.value);
+    }
+  } finally {
+    loading.value = false;
+  }
+};
+const isSessionError = (error: unknown) => {
+  const message = error instanceof Error ? error.message : String(error ?? '');
+  return message.includes('无效的会话') || message.includes('会话已过期');
 };
 
 /** 删除按钮操作 */

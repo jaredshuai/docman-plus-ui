@@ -20,6 +20,7 @@
         </el-card>
       </el-col>
       <el-col :lg="20" :xs="24">
+        <el-alert v-if="loadError" :title="loadError" type="warning" show-icon :closable="false" class="mb-[10px]" />
         <transition :enter-active-class="proxy?.animate.searchAnimate.enter" :leave-active-class="proxy?.animate.searchAnimate.leave">
           <div v-show="showSearch" class="mb-[10px]">
             <el-card shadow="hover">
@@ -200,7 +201,7 @@ import { RouterJumpVo } from '@/api/workflow/workflowCommon/types';
 import VueJsonPretty from 'vue-json-pretty';
 import 'vue-json-pretty/lib/styles.css';
 import UserSelect from '@/components/UserSelect/index.vue';
-import { ElForm, FormInstance } from 'element-plus';
+import { ElForm, ElMessage, FormInstance } from 'element-plus';
 //审批记录组件
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 const { wf_business_status } = toRefs<any>(proxy?.useDict('wf_business_status'));
@@ -231,6 +232,7 @@ const showSearch = ref(true);
 const total = ref(0);
 // 实例id
 const instanceId = ref(undefined);
+const loadError = ref('');
 
 // 流程变量是否显示
 const variableVisible = ref(false);
@@ -299,8 +301,15 @@ watchEffect(
 
 /** 查询流程分类下拉树结构 */
 const getTreeselect = async () => {
-  const res = await categoryTree();
-  categoryOptions.value = res.data;
+  try {
+    const res = await categoryTree();
+    categoryOptions.value = res.data;
+  } catch (error) {
+    categoryOptions.value = [];
+    if (!isSessionError(error)) {
+      ElMessage.error('流程分类加载失败，请刷新后重试');
+    }
+  }
 };
 
 /** 搜索按钮操作 */
@@ -329,22 +338,46 @@ const handleSelectionChange = (selection: FlowInstanceVO[]) => {
   multiple.value = !selection.length;
 };
 //分页
-const getProcessInstanceRunningList = () => {
+const getProcessInstanceRunningList = async () => {
   loading.value = true;
-  pageByRunning(queryParams.value).then((resp) => {
+  loadError.value = '';
+  try {
+    const resp = await pageByRunning(queryParams.value);
     processInstanceList.value = resp.rows;
     total.value = resp.total;
+  } catch (error) {
+    processInstanceList.value = [];
+    total.value = 0;
+    if (!isSessionError(error)) {
+      loadError.value = '运行中流程加载失败，请刷新后重试';
+      ElMessage.error(loadError.value);
+    }
+  } finally {
     loading.value = false;
-  });
+  }
 };
 //分页
-const getProcessInstanceFinishList = () => {
+const getProcessInstanceFinishList = async () => {
   loading.value = true;
-  pageByFinish(queryParams.value).then((resp) => {
+  loadError.value = '';
+  try {
+    const resp = await pageByFinish(queryParams.value);
     processInstanceList.value = resp.rows;
     total.value = resp.total;
+  } catch (error) {
+    processInstanceList.value = [];
+    total.value = 0;
+    if (!isSessionError(error)) {
+      loadError.value = '已完成流程加载失败，请刷新后重试';
+      ElMessage.error(loadError.value);
+    }
+  } finally {
     loading.value = false;
-  });
+  }
+};
+const isSessionError = (error: unknown) => {
+  const message = error instanceof Error ? error.message : String(error ?? '');
+  return message.includes('无效的会话') || message.includes('会话已过期');
 };
 
 /** 删除按钮操作 */

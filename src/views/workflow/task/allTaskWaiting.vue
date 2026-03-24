@@ -1,5 +1,6 @@
 <template>
   <div class="p-2">
+    <el-alert v-if="loadError" :title="loadError" type="warning" show-icon :closable="false" class="mb-[10px]" />
     <transition :enter-active-class="proxy?.animate.searchAnimate.enter" :leave-active-class="proxy?.animate.searchAnimate.leave">
       <div v-show="showSearch" class="mb-[10px]">
         <el-card shadow="hover">
@@ -119,7 +120,7 @@ import { RouterJumpVo } from '@/api/workflow/workflowCommon/types';
 import processMeddle from '@/components/Process/processMeddle';
 import messageType from '@/components/Process/MessageType';
 import { UserVO } from '@/api/system/user/types';
-import { TabsPaneContext } from 'element-plus';
+import { ElMessage, TabsPaneContext } from 'element-plus';
 //选人组件
 const userSelectRef = ref<InstanceType<typeof UserSelect>>();
 //流程干预组件
@@ -147,6 +148,7 @@ const showSearch = ref(true);
 const total = ref(0);
 // 模型定义表格数据
 const taskList = ref([]);
+const loadError = ref('');
 const buttonType = ref('');
 //申请人id
 const selectUserIds = ref<Array<number | string>>([]);
@@ -197,21 +199,45 @@ const changeTab = async (data: TabsPaneContext) => {
   }
 };
 //分页
-const getWaitingList = () => {
+const getWaitingList = async () => {
   loading.value = true;
-  pageByAllTaskWait(queryParams.value).then((resp) => {
+  loadError.value = '';
+  try {
+    const resp = await pageByAllTaskWait(queryParams.value);
     taskList.value = resp.rows;
     total.value = resp.total;
+  } catch (error) {
+    taskList.value = [];
+    total.value = 0;
+    if (!isSessionError(error)) {
+      loadError.value = '待办任务加载失败，请刷新后重试';
+      ElMessage.error(loadError.value);
+    }
+  } finally {
     loading.value = false;
-  });
+  }
 };
-const getFinishList = () => {
+const getFinishList = async () => {
   loading.value = true;
-  pageByAllTaskFinish(queryParams.value).then((resp) => {
+  loadError.value = '';
+  try {
+    const resp = await pageByAllTaskFinish(queryParams.value);
     taskList.value = resp.rows;
     total.value = resp.total;
+  } catch (error) {
+    taskList.value = [];
+    total.value = 0;
+    if (!isSessionError(error)) {
+      loadError.value = '已办任务加载失败，请刷新后重试';
+      ElMessage.error(loadError.value);
+    }
+  } finally {
     loading.value = false;
-  });
+  }
+};
+const isSessionError = (error: unknown) => {
+  const message = error instanceof Error ? error.message : String(error ?? '');
+  return message.includes('无效的会话') || message.includes('会话已过期');
 };
 // 打开催办
 const handleUrgeTaskOpen = () => {
