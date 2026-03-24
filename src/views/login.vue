@@ -1,6 +1,6 @@
 <template>
   <div class="login">
-    <el-form ref="loginRef" :model="loginForm" :rules="loginRules" class="login-form">
+    <el-form ref="loginRef" :model="loginForm" :rules="loginRules" class="login-form" data-testid="login-form">
       <div class="title-box">
         <h3 class="title">{{ title }}</h3>
         <lang-select />
@@ -12,7 +12,7 @@
         </el-select>
       </el-form-item>
       <el-form-item prop="username">
-        <el-input v-model="loginForm.username" type="text" size="large" auto-complete="off" :placeholder="proxy.$t('login.username')">
+        <el-input v-model="loginForm.username" type="text" size="large" auto-complete="off" :placeholder="proxy.$t('login.username')" data-testid="username-input">
           <template #prefix><svg-icon icon-class="user" class="el-input__icon input-icon" /></template>
         </el-input>
       </el-form-item>
@@ -23,6 +23,7 @@
           size="large"
           auto-complete="off"
           :placeholder="proxy.$t('login.password')"
+          data-testid="password-input"
           @keyup.enter="handleLogin"
         >
           <template #prefix><svg-icon icon-class="password" class="el-input__icon input-icon" /></template>
@@ -62,7 +63,7 @@
         </el-button>
       </el-form-item>
       <el-form-item style="width: 100%">
-        <el-button :loading="loading" size="large" type="primary" style="width: 100%" @click.prevent="handleLogin">
+        <el-button :loading="loading" size="large" type="primary" style="width: 100%" data-testid="login-button" @click.prevent="handleLogin">
           <span v-if="!loading">{{ proxy.$t('login.login') }}</span>
           <span v-else>{{ proxy.$t('login.logging') }}</span>
         </el-button>
@@ -96,8 +97,8 @@ const { t } = useI18n();
 
 const loginForm = ref<LoginData>({
   tenantId: '000000',
-  username: 'admin',
-  password: 'admin123',
+  username: '',
+  password: '',
   rememberMe: false,
   code: '',
   uuid: ''
@@ -136,17 +137,15 @@ const handleLogin = () => {
   loginRef.value?.validate(async (valid: boolean, fields: any) => {
     if (valid) {
       loading.value = true;
-      // 勾选了需要记住密码设置在 localStorage 中设置记住用户名和密码
+      // 勾选后仅记住租户和用户名，不在本地持久化密码。
       if (loginForm.value.rememberMe) {
         localStorage.setItem('tenantId', String(loginForm.value.tenantId));
         localStorage.setItem('username', String(loginForm.value.username));
-        localStorage.setItem('password', String(loginForm.value.password));
         localStorage.setItem('rememberMe', String(loginForm.value.rememberMe));
       } else {
         // 否则移除
         localStorage.removeItem('tenantId');
         localStorage.removeItem('username');
-        localStorage.removeItem('password');
         localStorage.removeItem('rememberMe');
       }
       // 调用action的登录方法
@@ -186,13 +185,13 @@ const getCode = async () => {
 const getLoginData = () => {
   const tenantId = localStorage.getItem('tenantId');
   const username = localStorage.getItem('username');
-  const password = localStorage.getItem('password');
   const rememberMe = localStorage.getItem('rememberMe');
+  localStorage.removeItem('password');
   loginForm.value = {
     tenantId: tenantId === null ? String(loginForm.value.tenantId) : tenantId,
     username: username === null ? String(loginForm.value.username) : username,
-    password: password === null ? String(loginForm.value.password) : String(password),
-    rememberMe: rememberMe === null ? false : Boolean(rememberMe)
+    password: '',
+    rememberMe: rememberMe === 'true'
   } as LoginData;
 };
 
