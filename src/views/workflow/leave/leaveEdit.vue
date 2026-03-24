@@ -1,5 +1,6 @@
 <template>
   <div class="p-2">
+    <el-alert v-if="loadError" :title="loadError" type="warning" show-icon :closable="false" class="mb-[10px]" />
     <el-card shadow="never">
       <!-- mode用于直接后端发起流程 不同接口实现方式可查看具体后端代码 -->
       <!-- 默认前端发起 前端发起更多样性 比如可以选审批人 选抄送人 上传附件等等 后端发起需要用户自行编写代码传这些参数 -->
@@ -62,10 +63,12 @@ import ApprovalRecord from '@/components/Process/approvalRecord.vue';
 import ApprovalButton from '@/components/Process/approvalButton.vue';
 import { AxiosResponse } from 'axios';
 import { StartProcessBo } from '@/api/workflow/workflowCommon/types';
+import { ElMessage } from 'element-plus';
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 
 const buttonLoading = ref(false);
 const loading = ref(true);
+const loadError = ref('');
 const leaveTime = ref<Array<string>>([]);
 //路由参数
 const routeParams = ref<Record<string, any>>({});
@@ -176,14 +179,23 @@ const changeLeaveTime = () => {
 const getInfo = () => {
   loading.value = true;
   buttonLoading.value = false;
+  loadError.value = '';
   nextTick(async () => {
-    const res = await getLeave(routeParams.value.id);
-    Object.assign(form.value, res.data);
-    leaveTime.value = [];
-    leaveTime.value.push(form.value.startDate);
-    leaveTime.value.push(form.value.endDate);
-    loading.value = false;
-    buttonLoading.value = false;
+    try {
+      const res = await getLeave(routeParams.value.id);
+      Object.assign(form.value, res.data);
+      leaveTime.value = [];
+      leaveTime.value.push(form.value.startDate);
+      leaveTime.value.push(form.value.endDate);
+    } catch (error) {
+      if (!isSessionError(error)) {
+        loadError.value = '请假单详情加载失败，请返回列表后重试';
+        ElMessage.error(loadError.value);
+      }
+    } finally {
+      loading.value = false;
+      buttonLoading.value = false;
+    }
   });
 };
 
@@ -199,29 +211,46 @@ const submitForm = (status: string, mode: boolean) => {
       form.value.endDate = leaveTime.value[1];
       if (valid) {
         buttonLoading.value = true;
+        loadError.value = '';
         // 设置后端发起和不等于草稿状态 直接走流程发起
         if (mode && status != 'draft') {
-          const res = await submitAndFlowStart(form.value).finally(() => (buttonLoading.value = false));
-          form.value = res.data;
-          buttonLoading.value = false;
-          proxy?.$modal.msgSuccess('操作成功');
-          proxy.$tab.closePage(proxy.$route);
-          proxy.$router.go(-1);
-        } else {
-          let res;
-          if (form.value.id) {
-            res = await updateLeave(form.value).finally(() => (buttonLoading.value = false));
-          } else {
-            res = await addLeave(form.value).finally(() => (buttonLoading.value = false));
-          }
-          form.value = res.data;
-          if (status === 'draft') {
-            buttonLoading.value = false;
-            proxy?.$modal.msgSuccess('暂存成功');
+          try {
+            const res = await submitAndFlowStart(form.value);
+            form.value = res.data;
+            proxy?.$modal.msgSuccess('操作成功');
             proxy.$tab.closePage(proxy.$route);
             proxy.$router.go(-1);
-          } else {
-            await handleStartWorkFlow(res.data);
+          } catch (error) {
+            if (!isSessionError(error)) {
+              loadError.value = '请假流程提交失败，请稍后重试';
+              ElMessage.error(loadError.value);
+            }
+          } finally {
+            buttonLoading.value = false;
+          }
+        } else {
+          try {
+            let res;
+            if (form.value.id) {
+              res = await updateLeave(form.value);
+            } else {
+              res = await addLeave(form.value);
+            }
+            form.value = res.data;
+            if (status === 'draft') {
+              proxy?.$modal.msgSuccess('暂存成功');
+              proxy.$tab.closePage(proxy.$route);
+              proxy.$router.go(-1);
+            } else {
+              await handleStartWorkFlow(res.data);
+            }
+          } catch (error) {
+            if (!isSessionError(error)) {
+              loadError.value = '请假单保存失败，请稍后重试';
+              ElMessage.error(loadError.value);
+            }
+          } finally {
+            buttonLoading.value = false;
           }
         }
       }
@@ -255,6 +284,11 @@ const handleStartWorkFlow = async (data: LeaveForm) => {
       buttonLoading.value = false;
       submitVerifyRef.value.openDialog(resp.data.taskId);
     }
+  } catch (error) {
+    if (!isSessionError(error)) {
+      loadError.value = '流程发起失败，请稍后重试';
+      ElMessage.error(loadError.value);
+    }
   } finally {
     buttonLoading.value = false;
   }
@@ -283,4 +317,9 @@ onMounted(() => {
     }
   });
 });
+
+const isSessionError = (error: unknown) => {
+  const message = error instanceof Error ? error.message : String(error ?? '');
+  return message.includes('无效的会话') || message.includes('会话已过期');
+};
 </script>

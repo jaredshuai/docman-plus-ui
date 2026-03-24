@@ -1,5 +1,6 @@
 <template>
   <div class="p-2">
+    <el-alert v-if="loadError" :title="loadError" type="warning" show-icon :closable="false" class="mb-[10px]" />
     <transition :enter-active-class="proxy?.animate.searchAnimate.enter" :leave-active-class="proxy?.animate.searchAnimate.leave">
       <div v-show="showSearch" class="search">
         <el-form ref="queryFormRef" :model="queryParams" :inline="true">
@@ -91,6 +92,7 @@
 import { delLeave, listLeave } from '@/api/workflow/leave';
 import { cancelProcessApply } from '@/api/workflow/instance';
 import { LeaveForm, LeaveQuery, LeaveVO } from '@/api/workflow/leave/types';
+import { ElMessage } from 'element-plus';
 
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 const { wf_business_status } = toRefs<any>(proxy?.useDict('wf_business_status'));
@@ -101,6 +103,7 @@ const ids = ref<Array<string | number>>([]);
 const single = ref(true);
 const multiple = ref(true);
 const total = ref(0);
+const loadError = ref('');
 const options = [
   {
     value: '1',
@@ -138,10 +141,21 @@ const { queryParams } = toRefs(data);
 /** 查询请假列表 */
 const getList = async () => {
   loading.value = true;
-  const res = await listLeave(queryParams.value);
-  leaveList.value = res.rows;
-  total.value = res.total;
-  loading.value = false;
+  loadError.value = '';
+  try {
+    const res = await listLeave(queryParams.value);
+    leaveList.value = res.rows;
+    total.value = res.total;
+  } catch (error) {
+    leaveList.value = [];
+    total.value = 0;
+    if (!isSessionError(error)) {
+      loadError.value = '请假单列表加载失败，请刷新后重试';
+      ElMessage.error(loadError.value);
+    }
+  } finally {
+    loading.value = false;
+  }
 };
 
 /** 搜索按钮操作 */
@@ -230,6 +244,12 @@ const handleCancelProcessApply = async (id: string) => {
   await getList();
   proxy?.$modal.msgSuccess('撤销成功');
 };
+
+const isSessionError = (error: unknown) => {
+  const message = error instanceof Error ? error.message : String(error ?? '');
+  return message.includes('无效的会话') || message.includes('会话已过期');
+};
+
 onMounted(() => {
   getList();
 });
