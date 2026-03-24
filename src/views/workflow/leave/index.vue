@@ -213,10 +213,17 @@ const handleView = (row?: LeaveVO) => {
 /** 删除按钮操作 */
 const handleDelete = async (row?: LeaveVO) => {
   const _ids = row?.id || ids.value;
-  await proxy?.$modal.confirm('是否确认删除请假编号为"' + _ids + '"的数据项？').finally(() => (loading.value = false));
-  await delLeave(_ids);
-  proxy?.$modal.msgSuccess('删除成功');
-  await getList();
+  loading.value = true;
+  try {
+    await proxy?.$modal.confirm('是否确认删除请假编号为"' + _ids + '"的数据项？');
+    await delLeave(_ids);
+    proxy?.$modal.msgSuccess('删除成功');
+    await getList();
+  } catch (error) {
+    handleApiError(error, '删除失败，请稍后重试');
+  } finally {
+    loading.value = false;
+  }
 };
 
 /** 导出按钮操作 */
@@ -238,9 +245,15 @@ const handleCancelProcessApply = async (id: string) => {
     businessId: id,
     message: '申请人撤销流程！'
   };
-  await cancelProcessApply(data).finally(() => (loading.value = false));
-  await getList();
-  proxy?.$modal.msgSuccess('撤销成功');
+  try {
+    await cancelProcessApply(data);
+    await getList();
+    proxy?.$modal.msgSuccess('撤销成功');
+  } catch (error) {
+    handleApiError(error, '撤销失败，请稍后重试');
+  } finally {
+    loading.value = false;
+  }
 };
 
 onMounted(() => {

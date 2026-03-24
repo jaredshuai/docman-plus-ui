@@ -369,15 +369,19 @@ const handleBackProcess = async () => {
   loading.value = true;
   backLoading.value = true;
   backButtonDisabled.value = true;
-  await backProcess(backForm.value).finally(() => {
+  try {
+    await backProcess(backForm.value);
+    dialog.visible = false;
+    emits('submitCallback');
+    proxy?.$modal.msgSuccess('操作成功');
+  } catch (error) {
+    handleApiError(error, '驳回失败，请稍后重试');
+  } finally {
     loading.value = false;
     buttonDisabled.value = false;
-  });
-  dialog.visible = false;
-  backLoading.value = false;
-  backButtonDisabled.value = false;
-  emits('submitCallback');
-  proxy?.$modal.msgSuccess('操作成功');
+    backLoading.value = false;
+    backButtonDisabled.value = false;
+  }
 };
 //取消
 const cancel = async () => {
@@ -421,13 +425,17 @@ const addMultiInstanceUser = async (data) => {
     await proxy?.$modal.confirm('是否确认提交？');
     loading.value = true;
     buttonDisabled.value = true;
-    await taskOperation(taskOperationBo, 'addSignature').finally(() => {
+    try {
+      await taskOperation(taskOperationBo, 'addSignature');
+      dialog.visible = false;
+      emits('submitCallback');
+      proxy?.$modal.msgSuccess('操作成功');
+    } catch (error) {
+      handleApiError(error, '加签失败，请稍后重试');
+    } finally {
       loading.value = false;
       buttonDisabled.value = false;
-    });
-    dialog.visible = false;
-    emits('submitCallback');
-    proxy?.$modal.msgSuccess('操作成功');
+    }
   } else {
     proxy?.$modal.msgWarning('请选择用户！');
   }
@@ -442,13 +450,17 @@ const deleteMultiInstanceUser = async (row) => {
     taskId: taskId.value,
     message: form.value.message
   });
-  await taskOperation(taskOperationBo, 'reductionSignature').finally(() => {
+  try {
+    await taskOperation(taskOperationBo, 'reductionSignature');
+    dialog.visible = false;
+    emits('submitCallback');
+    proxy?.$modal.msgSuccess('操作成功');
+  } catch (error) {
+    handleApiError(error, '减签失败，请稍后重试');
+  } finally {
     loading.value = false;
     buttonDisabled.value = false;
-  });
-  dialog.visible = false;
-  emits('submitCallback');
-  proxy?.$modal.msgSuccess('操作成功');
+  }
 };
 //打开转办
 const openTransferTask = () => {
@@ -465,13 +477,17 @@ const handleTransferTask = async (data) => {
     await proxy?.$modal.confirm('是否确认提交？');
     loading.value = true;
     buttonDisabled.value = true;
-    await taskOperation(taskOperationBo, 'transferTask').finally(() => {
+    try {
+      await taskOperation(taskOperationBo, 'transferTask');
+      dialog.visible = false;
+      emits('submitCallback');
+      proxy?.$modal.msgSuccess('操作成功');
+    } catch (error) {
+      handleApiError(error, '转办失败，请稍后重试');
+    } finally {
       loading.value = false;
       buttonDisabled.value = false;
-    });
-    dialog.visible = false;
-    emits('submitCallback');
-    proxy?.$modal.msgSuccess('操作成功');
+    }
   } else {
     proxy?.$modal.msgWarning('请选择用户！');
   }
@@ -492,13 +508,17 @@ const handleDelegateTask = async (data) => {
     await proxy?.$modal.confirm('是否确认提交？');
     loading.value = true;
     buttonDisabled.value = true;
-    await taskOperation(taskOperationBo, 'delegateTask').finally(() => {
+    try {
+      await taskOperation(taskOperationBo, 'delegateTask');
+      dialog.visible = false;
+      emits('submitCallback');
+      proxy?.$modal.msgSuccess('操作成功');
+    } catch (error) {
+      handleApiError(error, '委托失败，请稍后重试');
+    } finally {
       loading.value = false;
       buttonDisabled.value = false;
-    });
-    dialog.visible = false;
-    emits('submitCallback');
-    proxy?.$modal.msgSuccess('操作成功');
+    }
   } else {
     proxy?.$modal.msgWarning('请选择用户！');
   }
@@ -512,13 +532,17 @@ const handleTerminationTask = async () => {
   await proxy?.$modal.confirm('是否确认终止？');
   loading.value = true;
   buttonDisabled.value = true;
-  await terminationTask(params).finally(() => {
+  try {
+    await terminationTask(params);
+    dialog.visible = false;
+    emits('submitCallback');
+    proxy?.$modal.msgSuccess('操作成功');
+  } catch (error) {
+    handleApiError(error, '终止失败，请稍后重试');
+  } finally {
     loading.value = false;
     buttonDisabled.value = false;
-  });
-  dialog.visible = false;
-  emits('submitCallback');
-  proxy?.$modal.msgSuccess('操作成功');
+  }
 };
 const handleTaskUser = async () => {
   try {

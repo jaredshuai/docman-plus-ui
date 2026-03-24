@@ -238,14 +238,20 @@ const submitForm = () => {
   categoryFormRef.value?.validate(async (valid: boolean) => {
     if (valid) {
       buttonLoading.value = true;
-      if (form.value.categoryId) {
-        await updateCategory(form.value).finally(() => (buttonLoading.value = false));
-      } else {
-        await addCategory(form.value).finally(() => (buttonLoading.value = false));
+      try {
+        if (form.value.categoryId) {
+          await updateCategory(form.value);
+        } else {
+          await addCategory(form.value);
+        }
+        proxy?.$modal.msgSuccess('操作成功');
+        dialog.visible = false;
+        getList();
+      } catch (error) {
+        handleApiError(error, '保存失败，请稍后重试');
+      } finally {
+        buttonLoading.value = false;
       }
-      proxy?.$modal.msgSuccess('操作成功');
-      dialog.visible = false;
-      getList();
     }
   });
 };
@@ -254,9 +260,15 @@ const submitForm = () => {
 const handleDelete = async (row: CategoryVO) => {
   await proxy?.$modal.confirm('是否确认删除"' + row.categoryName + '"的分类？');
   loading.value = true;
-  await delCategory(row.categoryId).finally(() => (loading.value = false));
-  await getList();
-  proxy?.$modal.msgSuccess('删除成功');
+  try {
+    await delCategory(row.categoryId);
+    await getList();
+    proxy?.$modal.msgSuccess('删除成功');
+  } catch (error) {
+    handleApiError(error, '删除失败，请稍后重试');
+  } finally {
+    loading.value = false;
+  }
 };
 
 onMounted(() => {

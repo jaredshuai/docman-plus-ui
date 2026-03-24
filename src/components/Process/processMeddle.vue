@@ -132,13 +132,17 @@ const handleTransferTask = async (data) => {
     await proxy?.$modal.confirm('是否确认提交？');
     loading.value = true;
     buttonDisabled.value = true;
-    await taskOperation(taskOperationBo, 'transferTask').finally(() => {
+    try {
+      await taskOperation(taskOperationBo, 'transferTask');
+      visible.value = false;
+      emits('submitCallback');
+      proxy?.$modal.msgSuccess('操作成功');
+    } catch (error) {
+      handleApiError(error, '转办失败，请稍后重试');
+    } finally {
       loading.value = false;
       buttonDisabled.value = false;
-    });
-    visible.value = false;
-    emits('submitCallback');
-    proxy?.$modal.msgSuccess('操作成功');
+    }
   } else {
     proxy?.$modal.msgWarning('请选择用户！');
   }
@@ -158,13 +162,17 @@ const addMultiInstanceUser = async (data) => {
     await proxy?.$modal.confirm('是否确认提交？');
     loading.value = true;
     buttonDisabled.value = true;
-    await taskOperation(taskOperationBo, 'addSignature').finally(() => {
+    try {
+      await taskOperation(taskOperationBo, 'addSignature');
+      visible.value = false;
+      emits('submitCallback');
+      proxy?.$modal.msgSuccess('操作成功');
+    } catch (error) {
+      handleApiError(error, '加签失败，请稍后重试');
+    } finally {
       loading.value = false;
       buttonDisabled.value = false;
-    });
-    visible.value = false;
-    emits('submitCallback');
-    proxy?.$modal.msgSuccess('操作成功');
+    }
   } else {
     proxy?.$modal.msgWarning('请选择用户！');
   }
@@ -179,13 +187,17 @@ const deleteMultiInstanceUser = async (row) => {
     taskId: task.value.id,
     message: ''
   });
-  await taskOperation(taskOperationBo, 'reductionSignature').finally(() => {
+  try {
+    await taskOperation(taskOperationBo, 'reductionSignature');
+    visible.value = false;
+    emits('submitCallback');
+    proxy?.$modal.msgSuccess('操作成功');
+  } catch (error) {
+    handleApiError(error, '减签失败，请稍后重试');
+  } finally {
     loading.value = false;
     buttonDisabled.value = false;
-  });
-  visible.value = false;
-  emits('submitCallback');
-  proxy?.$modal.msgSuccess('操作成功');
+  }
 };
 //获取办理人
 const handleTaskUser = async () => {
@@ -213,13 +225,17 @@ const handleTerminationTask = async () => {
   await proxy?.$modal.confirm('是否确认终止？');
   loading.value = true;
   buttonDisabled.value = true;
-  await terminationTask(params).finally(() => {
+  try {
+    await terminationTask(params);
+    visible.value = false;
+    emits('submitCallback');
+    proxy?.$modal.msgSuccess('操作成功');
+  } catch (error) {
+    handleApiError(error, '终止失败，请稍后重试');
+  } finally {
     loading.value = false;
     buttonDisabled.value = false;
-  });
-  visible.value = false;
-  emits('submitCallback');
-  proxy?.$modal.msgSuccess('操作成功');
+  }
 };
 /**
  * 对外暴露子组件方法

@@ -268,8 +268,8 @@ const submitForm = () => {
         }
         dialog.visible = false;
         getList();
-      } catch (e) {
-        ElMessage.error('操作失败，请重试');
+      } catch (error) {
+        handleApiError(error, '操作失败，请稍后重试');
       }
     }
   });
@@ -284,8 +284,8 @@ function handleDelete(id: number) {
         await delProject([id]);
         proxy?.$modal.msgSuccess('删除成功');
         getList();
-      } catch (e) {
-        ElMessage.error('删除失败，请重试');
+      } catch (error) {
+        handleApiError(error, '删除失败，请稍后重试');
       }
     })
     .catch(() => {});

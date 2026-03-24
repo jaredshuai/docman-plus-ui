@@ -408,9 +408,15 @@ const handleDelete = async (row?: FlowDefinitionVo) => {
   const defList = processDefinitionList.value.filter((x) => id.indexOf(x.id) != -1).map((x) => x.flowCode);
   await proxy?.$modal.confirm('是否确认删除流程定义编码为【' + defList + '】的数据项？');
   loading.value = true;
-  await deleteDefinition(id).finally(() => (loading.value = false));
-  await handleQuery();
-  proxy?.$modal.msgSuccess('删除成功');
+  try {
+    await deleteDefinition(id);
+    await handleQuery();
+    proxy?.$modal.msgSuccess('删除成功');
+  } catch (error) {
+    handleApiError(error, '删除失败，请稍后重试');
+  } finally {
+    loading.value = false;
+  }
 };
 
 /** 发布流程定义 */
@@ -419,11 +425,17 @@ const handlePublish = async (row?: FlowDefinitionVo) => {
     '是否确认发布流程定义编码为【' + row.flowCode + '】版本为【' + row.version + '】的数据项？，发布后会将已发布流程定义改为失效！'
   );
   loading.value = true;
-  await publish(row.id).finally(() => (loading.value = false));
-  processDefinitionDialog.visible = false;
-  activeName.value = '0';
-  await handleQuery();
-  proxy?.$modal.msgSuccess('发布成功');
+  try {
+    await publish(row.id);
+    processDefinitionDialog.visible = false;
+    activeName.value = '0';
+    await handleQuery();
+    proxy?.$modal.msgSuccess('发布成功');
+  } catch (error) {
+    handleApiError(error, '发布失败，请稍后重试');
+  } finally {
+    loading.value = false;
+  }
 };
 /** 挂起/激活 */
 const handleProcessDefState = async (row: FlowDefinitionVo, status: number | string | boolean) => {
@@ -547,15 +559,21 @@ const handleSubmit = async () => {
       const ext = {};
       ext.autoPass = autoPass.value;
       form.value.ext = JSON.stringify(ext);
-      if (form.value.id) {
-        await edit(form.value).finally(() => (loading.value = false));
-      } else {
-        await add(form.value).finally(() => (loading.value = false));
-        activeName.value = '1';
+      try {
+        if (form.value.id) {
+          await edit(form.value);
+        } else {
+          await add(form.value);
+          activeName.value = '1';
+        }
+        proxy?.$modal.msgSuccess('操作成功');
+        modelDialog.visible = false;
+        handleQuery();
+      } catch (error) {
+        handleApiError(error, '保存失败，请稍后重试');
+      } finally {
+        loading.value = false;
       }
-      proxy?.$modal.msgSuccess('操作成功');
-      modelDialog.visible = false;
-      handleQuery();
     }
   });
 };
@@ -565,18 +583,23 @@ const handleCopyDef = async (row: FlowDefinitionVo) => {
     confirmButtonText: '确认',
     cancelButtonText: '取消',
     type: 'warning'
-  } as ElMessageBoxOptions).then(() => {
-    loading.value = true;
-    copy(row.id)
-      .then((resp) => {
-        if (resp.code === 200) {
-          proxy?.$modal.msgSuccess('操作成功');
-          activeName.value = '1';
-          handleQuery();
-        }
-      })
-      .finally(() => (loading.value = false));
-  });
+  } as ElMessageBoxOptions)
+    .then(() => {
+      loading.value = true;
+      copy(row.id)
+        .then((resp) => {
+          if (resp.code === 200) {
+            proxy?.$modal.msgSuccess('操作成功');
+            activeName.value = '1';
+            handleQuery();
+          }
+        })
+        .catch((error) => {
+          handleApiError(error, '复制失败，请稍后重试');
+        })
+        .finally(() => (loading.value = false));
+    })
+    .catch(() => {});
 };
 
 /** 导出按钮操作 */

@@ -374,14 +374,20 @@ const handleDelete = async (row: FlowInstanceVO) => {
   const instanceIdList = row.id || instanceIds.value;
   await proxy?.$modal.confirm('是否确认删除？');
   loading.value = true;
-  if ('running' === tab.value) {
-    await deleteByInstanceIds(instanceIdList).finally(() => (loading.value = false));
-    getProcessInstanceRunningList();
-  } else {
-    await deleteHisByInstanceIds(instanceIdList).finally(() => (loading.value = false));
-    getProcessInstanceFinishList();
+  try {
+    if ('running' === tab.value) {
+      await deleteByInstanceIds(instanceIdList);
+      getProcessInstanceRunningList();
+    } else {
+      await deleteHisByInstanceIds(instanceIdList);
+      getProcessInstanceFinishList();
+    }
+    proxy?.$modal.msgSuccess('删除成功');
+  } catch (error) {
+    handleApiError(error, '删除失败，请稍后重试');
+  } finally {
+    loading.value = false;
   }
-  proxy?.$modal.msgSuccess('删除成功');
 };
 const changeTab = async (data: string) => {
   processInstanceList.value = [];
@@ -396,14 +402,20 @@ const changeTab = async (data: string) => {
 const handleInvalid = async (row: FlowInstanceVO) => {
   await proxy?.$modal.confirm('是否确认作废？');
   loading.value = true;
-  if ('running' === tab.value) {
-    const param = {
-      id: row.id,
-      comment: deleteReason.value
-    };
-    await invalid(param).finally(() => (loading.value = false));
-    getProcessInstanceRunningList();
-    proxy?.$modal.msgSuccess('操作成功');
+  try {
+    if ('running' === tab.value) {
+      const param = {
+        id: row.id,
+        comment: deleteReason.value
+      };
+      await invalid(param);
+      getProcessInstanceRunningList();
+      proxy?.$modal.msgSuccess('操作成功');
+    }
+  } catch (error) {
+    handleApiError(error, '作废失败，请稍后重试');
+  } finally {
+    loading.value = false;
   }
 };
 const cancelPopover = async (index: any) => {
@@ -485,10 +497,14 @@ const handleVariable = async (formEl: FormInstance | undefined) => {
     if (valid) {
       form.value.instanceId = instanceId.value;
       await proxy?.$modal.confirm('是否确认提交？');
-      await updateVariable(form.value);
-      proxy?.$modal.msgSuccess('操作成功');
-      const data = await instanceVariable(instanceId.value);
-      variables.value = data.data.variable;
+      try {
+        await updateVariable(form.value);
+        proxy?.$modal.msgSuccess('操作成功');
+        const data = await instanceVariable(instanceId.value);
+        variables.value = data.data.variable;
+      } catch (error) {
+        handleApiError(error, '更新变量失败，请稍后重试');
+      }
     }
   });
 };

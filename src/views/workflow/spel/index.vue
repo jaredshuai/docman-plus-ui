@@ -278,14 +278,20 @@ const submitForm = () => {
   spelFormRef.value?.validate(async (valid: boolean) => {
     if (valid) {
       buttonLoading.value = true;
-      if (form.value.id) {
-        await updateSpel(form.value).finally(() => (buttonLoading.value = false));
-      } else {
-        await addSpel(form.value).finally(() => (buttonLoading.value = false));
+      try {
+        if (form.value.id) {
+          await updateSpel(form.value);
+        } else {
+          await addSpel(form.value);
+        }
+        proxy?.$modal.msgSuccess('操作成功');
+        dialog.visible = false;
+        await getList();
+      } catch (error) {
+        handleApiError(error, '保存失败，请稍后重试');
+      } finally {
+        buttonLoading.value = false;
       }
-      proxy?.$modal.msgSuccess('操作成功');
-      dialog.visible = false;
-      await getList();
     }
   });
 };
@@ -293,10 +299,17 @@ const submitForm = () => {
 /** 删除按钮操作 */
 const handleDelete = async (row?: SpelVO) => {
   const _ids = row?.id || ids.value;
-  await proxy?.$modal.confirm('是否确认删除流程spel表达式定义编号为"' + _ids + '"的数据项？').finally(() => (loading.value = false));
-  await delSpel(_ids);
-  proxy?.$modal.msgSuccess('删除成功');
-  await getList();
+  await proxy?.$modal.confirm('是否确认删除流程spel表达式定义编号为"' + _ids + '"的数据项？');
+  loading.value = true;
+  try {
+    await delSpel(_ids);
+    proxy?.$modal.msgSuccess('删除成功');
+    await getList();
+  } catch (error) {
+    handleApiError(error, '删除失败，请稍后重试');
+  } finally {
+    loading.value = false;
+  }
 };
 
 /** 控制是否显示 viewSpel 输入框 */
