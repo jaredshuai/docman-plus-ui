@@ -1,5 +1,6 @@
 <template>
   <el-dialog v-model="visible" draggable title="流程干预" :width="props.width" :height="props.height" :close-on-click-modal="false">
+    <el-alert v-if="loadError" :title="loadError" type="warning" show-icon :closable="false" class="mb-[10px]" />
     <el-descriptions v-loading="loading" class="margin-top" :title="`${task.flowName}(${task.flowCode})`" :column="2" border>
       <el-descriptions-item label="任务名称">{{ task.nodeName }}</el-descriptions-item>
       <el-descriptions-item label="节点编码">{{ task.nodeCode }}</el-descriptions-item>
@@ -55,6 +56,7 @@ import { FlowTaskVO, TaskOperationBo } from '@/api/workflow/task/types';
 import UserSelect from '@/components/UserSelect';
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 import { getTask, taskOperation, currentTaskAllUser, terminationTask } from '@/api/workflow/task';
+import { ElMessage } from 'element-plus';
 const props = defineProps({
   width: propTypes.string.def('50%'),
   height: propTypes.string.def('100%')
@@ -67,6 +69,7 @@ const loading = ref(true);
 //按钮
 const buttonDisabled = ref(true);
 const visible = ref(false);
+const loadError = ref('');
 //减签弹窗
 const deleteSignatureVisible = ref(false);
 //可减签的人员
@@ -96,11 +99,24 @@ const task = ref<FlowTaskVO>({
 
 const open = (taskId: string) => {
   visible.value = true;
-  getTask(taskId).then((response) => {
-    loading.value = false;
-    buttonDisabled.value = false;
-    task.value = response.data;
-  });
+  loading.value = true;
+  buttonDisabled.value = true;
+  loadError.value = '';
+  getTask(taskId)
+    .then((response) => {
+      task.value = response.data;
+      buttonDisabled.value = false;
+    })
+    .catch((error) => {
+      buttonDisabled.value = false;
+      if (!isSessionError(error)) {
+        loadError.value = '流程干预数据加载失败，请关闭后重试';
+        ElMessage.error(loadError.value);
+      }
+    })
+    .finally(() => {
+      loading.value = false;
+    });
 };
 
 //打开转办
@@ -175,14 +191,21 @@ const deleteMultiInstanceUser = async (row) => {
 };
 //获取办理人
 const handleTaskUser = async () => {
-  const data = await currentTaskAllUser(task.value.id);
-  deleteUserList.value = data.data;
-  if (deleteUserList.value && deleteUserList.value.length > 0) {
-    deleteUserList.value.forEach((e) => {
-      e.nodeName = task.value.nodeName;
-    });
+  try {
+    const data = await currentTaskAllUser(task.value.id);
+    deleteUserList.value = data.data;
+    if (deleteUserList.value && deleteUserList.value.length > 0) {
+      deleteUserList.value.forEach((e) => {
+        e.nodeName = task.value.nodeName;
+      });
+    }
+    deleteSignatureVisible.value = true;
+  } catch (error) {
+    deleteUserList.value = [];
+    if (!isSessionError(error)) {
+      ElMessage.error('减签人员加载失败，请稍后重试');
+    }
   }
-  deleteSignatureVisible.value = true;
 };
 
 //终止任务
@@ -208,4 +231,9 @@ const handleTerminationTask = async () => {
 defineExpose({
   open
 });
+
+const isSessionError = (error: unknown) => {
+  const message = error instanceof Error ? error.message : String(error ?? '');
+  return message.includes('无效的会话') || message.includes('会话已过期');
+};
 </script>

@@ -1,5 +1,6 @@
 <template>
   <el-dialog v-model="dialog.visible" :title="dialog.title" width="50%" draggable :before-close="cancel" center :close-on-click-modal="false">
+    <el-alert v-if="loadError" :title="loadError" type="warning" show-icon :closable="false" class="mb-[10px]" />
     <el-form v-loading="loading" :model="form" label-width="120px">
       <el-form-item label="消息提醒">
         <el-checkbox-group v-model="form.messageType">
@@ -80,7 +81,13 @@
     <!-- 加签组件 -->
     <UserSelect ref="multiInstanceUserRef" :multiple="true" @confirm-call-back="addMultiInstanceUser"></UserSelect>
     <!-- 弹窗选人 -->
-    <UserSelect ref="porUserRef" :data="form.assigneeMap[nodeCode]" :multiple="true" :userIds="popUserIds" @confirm-call-back="handlePopUser"></UserSelect>
+    <UserSelect
+      ref="porUserRef"
+      :data="form.assigneeMap[nodeCode]"
+      :multiple="true"
+      :userIds="popUserIds"
+      @confirm-call-back="handlePopUser"
+    ></UserSelect>
 
     <!-- 驳回开始 -->
     <el-dialog v-model="backVisible" draggable title="驳回" width="40%" :close-on-click-modal="false">
@@ -135,7 +142,7 @@
 <script setup lang="ts">
 import { ref } from 'vue';
 import { ComponentInternalInstance } from 'vue';
-import { ElForm } from 'element-plus';
+import { ElForm, ElMessage } from 'element-plus';
 import {
   completeTask,
   backProcess,
@@ -167,6 +174,7 @@ const props = defineProps({
 const loading = ref(true);
 //按钮
 const buttonDisabled = ref(true);
+const loadError = ref('');
 //任务id
 const taskId = ref<string>('');
 //抄送人
@@ -256,24 +264,30 @@ const openDialog = async (id?: string) => {
   dialog.visible = true;
   loading.value = true;
   buttonDisabled.value = true;
-  const response = await getTask(taskId.value);
-  task.value = response.data;
-  buttonObj.value = {};
-  task.value.buttonList?.forEach((e) => {
-    buttonObj.value[e.code] = e.show;
-  });
-  selectCopyUserList.value = task.value.copyList;
-  selectCopyUserIds.value = task.value.copyList.map((e) => e.userId).join(',');
-  varNodeList.value = task.value.varList;
-  console.log('varNodeList', varNodeList.value)
-  buttonDisabled.value = false;
+  loadError.value = '';
   try {
+    const response = await getTask(taskId.value);
+    task.value = response.data;
+    buttonObj.value = {};
+    task.value.buttonList?.forEach((e) => {
+      buttonObj.value[e.code] = e.show;
+    });
+    selectCopyUserList.value = task.value.copyList;
+    selectCopyUserIds.value = task.value.copyList.map((e) => e.userId).join(',');
+    varNodeList.value = task.value.varList;
     const data = {
       taskId: taskId.value,
       variables: props.taskVariables
     };
     const nextData = await getNextNodeList(data);
     nestNodeList.value = nextData.data;
+    buttonDisabled.value = false;
+  } catch (error) {
+    buttonDisabled.value = false;
+    if (!isSessionError(error)) {
+      loadError.value = '审批弹窗加载失败，请关闭后重试';
+      ElMessage.error(loadError.value);
+    }
   } finally {
     loading.value = false;
   }
@@ -337,11 +351,20 @@ const handleBackProcessOpen = async () => {
   backVisible.value = true;
   backLoading.value = true;
   backButtonDisabled.value = true;
-  const data = await getBackTaskNode(task.value.id, task.value.nodeCode);
-  taskNodeList.value = data.data;
-  backLoading.value = false;
-  backButtonDisabled.value = false;
-  backForm.value.nodeCode = taskNodeList.value[0].nodeCode;
+  try {
+    const data = await getBackTaskNode(task.value.id, task.value.nodeCode);
+    taskNodeList.value = data.data;
+    backForm.value.nodeCode = taskNodeList.value[0]?.nodeCode;
+  } catch (error) {
+    taskNodeList.value = [];
+    backVisible.value = false;
+    if (!isSessionError(error)) {
+      ElMessage.error('驳回节点加载失败，请稍后重试');
+    }
+  } finally {
+    backLoading.value = false;
+    backButtonDisabled.value = false;
+  }
 };
 /** 驳回流程 */
 const handleBackProcess = async () => {
@@ -502,14 +525,21 @@ const handleTerminationTask = async () => {
   proxy?.$modal.msgSuccess('操作成功');
 };
 const handleTaskUser = async () => {
-  const data = await currentTaskAllUser(taskId.value);
-  deleteUserList.value = data.data;
-  if (deleteUserList.value && deleteUserList.value.length > 0) {
-    deleteUserList.value.forEach((e) => {
-      e.nodeName = task.value.nodeName;
-    });
+  try {
+    const data = await currentTaskAllUser(taskId.value);
+    deleteUserList.value = data.data;
+    if (deleteUserList.value && deleteUserList.value.length > 0) {
+      deleteUserList.value.forEach((e) => {
+        e.nodeName = task.value.nodeName;
+      });
+    }
+    deleteSignatureVisible.value = true;
+  } catch (error) {
+    deleteUserList.value = [];
+    if (!isSessionError(error)) {
+      ElMessage.error('减签人员加载失败，请稍后重试');
+    }
   }
-  deleteSignatureVisible.value = true;
 };
 // 选择人员
 const choosePeople = async (data) => {
@@ -538,4 +568,9 @@ const handlePopUser = async (userList) => {
 defineExpose({
   openDialog
 });
+
+const isSessionError = (error: unknown) => {
+  const message = error instanceof Error ? error.message : String(error ?? '');
+  return message.includes('无效的会话') || message.includes('会话已过期');
+};
 </script>

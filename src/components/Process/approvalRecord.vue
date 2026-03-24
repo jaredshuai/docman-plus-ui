@@ -1,6 +1,7 @@
 <template>
   <div class="container">
     <el-dialog v-model="visible" draggable title="审批记录" :width="props.width" :height="props.height" :close-on-click-modal="false">
+      <el-alert v-if="loadError" :title="loadError" type="warning" show-icon :closable="false" class="mb-[10px]" />
       <el-tabs v-model="tabActiveName" class="demo-tabs">
         <el-tab-pane v-loading="loading" label="流程图" name="image" style="height: 68vh">
           <flowChart :ins-id="insId" v-if="insId" />
@@ -63,6 +64,7 @@ import { flowHisTaskList } from '@/api/workflow/instance';
 import { propTypes } from '@/utils/propTypes';
 import { listByIds } from '@/api/system/oss';
 import FlowChart from '@/components/Process/flowChart.vue';
+import { ElMessage } from 'element-plus';
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 const { wf_task_status } = toRefs<any>(proxy?.useDict('wf_task_status'));
 const props = defineProps({
@@ -74,6 +76,7 @@ const visible = ref(false);
 const historyList = ref<Array<any>>([]);
 const tabActiveName = ref('image');
 const insId = ref(null);
+const loadError = ref('');
 
 //初始化查询审批记录
 const init = async (businessId: string | number) => {
@@ -81,24 +84,39 @@ const init = async (businessId: string | number) => {
   loading.value = true;
   tabActiveName.value = 'image';
   historyList.value = [];
-  flowHisTaskList(businessId).then((resp) => {
+  loadError.value = '';
+  insId.value = null;
+  try {
+    const resp = await flowHisTaskList(businessId);
     if (resp.data) {
       historyList.value = resp.data.list;
       insId.value = resp.data.instanceId;
       if (historyList.value.length > 0) {
         historyList.value.forEach((item) => {
           if (item.ext) {
-            getIds(item.ext).then((res) => {
-              item.attachmentList = res.data;
-            });
+            getIds(item.ext)
+              .then((res) => {
+                item.attachmentList = res.data;
+              })
+              .catch(() => {
+                item.attachmentList = [];
+              });
           } else {
             item.attachmentList = [];
           }
         });
       }
-      loading.value = false;
     }
-  });
+  } catch (error) {
+    historyList.value = [];
+    insId.value = null;
+    if (!isSessionError(error)) {
+      loadError.value = '审批记录加载失败，请关闭后重试';
+      ElMessage.error(loadError.value);
+    }
+  } finally {
+    loading.value = false;
+  }
 };
 const getIds = async (ids: string | number) => {
   const res = await listByIds(ids);
@@ -116,6 +134,11 @@ const handleDownload = (ossId: string) => {
 defineExpose({
   init
 });
+
+const isSessionError = (error: unknown) => {
+  const message = error instanceof Error ? error.message : String(error ?? '');
+  return message.includes('无效的会话') || message.includes('会话已过期');
+};
 </script>
 <style lang="scss" scoped>
 .container {
