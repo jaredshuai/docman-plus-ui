@@ -21,6 +21,15 @@
 
     <el-divider>执行日志</el-divider>
 
+    <el-alert
+      v-if="!hasProjectId"
+      title="请先在项目管理中选择项目后再查看执行日志"
+      type="info"
+      show-icon
+      :closable="false"
+      style="margin-bottom: 16px"
+    />
+
     <!-- 执行日志查询表格 -->
     <el-form :model="queryParams" ref="queryRef" :inline="true" label-width="68px">
       <el-form-item label="项目" prop="projectId">
@@ -84,7 +93,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, reactive, toRefs, getCurrentInstance, ComponentInternalInstance } from 'vue';
+import { computed, ref, onMounted, reactive, toRefs, getCurrentInstance, ComponentInternalInstance } from 'vue';
 import { useRoute } from 'vue-router';
 import { listExecutionLogs, listPlugins, triggerExecution, type DocPluginExecutionLogQuery, type DocPluginExecutionLogVo } from '@/api/docman/plugin';
 import { ElMessage, ElMessageBox } from 'element-plus';
@@ -99,7 +108,7 @@ const queryRef = ref<any>();
 const logList = ref<DocPluginExecutionLogVo[]>([]);
 const pluginList = ref<DocPluginInfo[]>([]);
 const projectOptions = ref<DocProject[]>([]);
-const loading = ref(true);
+const loading = ref(false);
 const pluginLoading = ref(true);
 const total = ref(0);
 
@@ -118,6 +127,7 @@ const data = reactive({
 });
 
 const { queryParams, drawer } = toRefs(data);
+const hasProjectId = computed(() => Number.isFinite(Number(queryParams.value.projectId)) && Number(queryParams.value.projectId) > 0);
 
 /** 查询插件列表 */
 async function getPluginList() {
@@ -134,9 +144,10 @@ async function getPluginList() {
 
 /** 查询日志列表 */
 async function getList() {
-  if (!queryParams.value.projectId) {
+  if (!hasProjectId.value) {
     logList.value = [];
     total.value = 0;
+    loading.value = false;
     return;
   }
   loading.value = true;
@@ -218,8 +229,10 @@ onMounted(() => {
   }
   Promise.all([getProjectOptions(), getPluginList()]);
   // Only load logs if projectId is present (backend requires it)
-  if (queryParams.value.projectId) {
+  if (hasProjectId.value) {
     getList();
+  } else {
+    loading.value = false;
   }
 });
 </script>
