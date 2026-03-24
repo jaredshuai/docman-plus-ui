@@ -12,6 +12,10 @@ import { createCustomNameComponent } from '@/utils/createCustomNameComponent';
 
 // 匹配views里面所有的.vue文件
 const modules = import.meta.glob('./../../views/**/*.vue');
+const fallbackModules: Record<string, () => Promise<any>> = {
+  'workspace/home/index': () => import('@/views/workspace/home/index.vue'),
+  'workspace/project/index': () => import('@/views/workspace/project/index.vue')
+};
 export const usePermissionStore = defineStore('permission', () => {
   const routes = ref<RouteRecordRaw[]>([]);
   const addRoutes = ref<RouteRecordRaw[]>([]);
@@ -153,6 +157,10 @@ export const loadView = (view: any, name: string) => {
       res = createCustomNameComponent(modules[path], { name });
       return res;
     }
+  }
+  const fallbackLoader = fallbackModules[view];
+  if (fallbackLoader) {
+    return createCustomNameComponent(fallbackLoader, { name });
   }
   return res;
 };
