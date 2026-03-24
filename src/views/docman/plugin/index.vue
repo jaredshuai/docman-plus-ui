@@ -134,11 +134,16 @@ async function getPluginList() {
 
 /** 查询日志列表 */
 async function getList() {
+  if (!queryParams.value.projectId) {
+    logList.value = [];
+    total.value = 0;
+    return;
+  }
   loading.value = true;
   try {
     const res = await listExecutionLogs(queryParams.value);
-    logList.value = res.data.rows;
-    total.value = res.data.total;
+    logList.value = res.rows;
+    total.value = res.total;
   } catch (e) {
     ElMessage.error('获取执行日志失败');
   } finally {
@@ -149,8 +154,8 @@ async function getList() {
 /** 查询项目下拉选项 */
 async function getProjectOptions() {
   try {
-    const res = await listProject({ pageNum: 1, pageSize: 100 });
-    projectOptions.value = res.data.rows;
+    const res = await listProject({ pageNum: 1, pageSize: 100 }) as any;
+    projectOptions.value = res.rows;
   } catch (e) {
     ElMessage.error('获取项目列表失败');
   }
@@ -211,7 +216,11 @@ onMounted(() => {
   if (projectId) {
     queryParams.value.projectId = Number(projectId);
   }
-  Promise.all([getProjectOptions(), getPluginList(), getList()]);
+  Promise.all([getProjectOptions(), getPluginList()]);
+  // Only load logs if projectId is present (backend requires it)
+  if (queryParams.value.projectId) {
+    getList();
+  }
 });
 </script>
 

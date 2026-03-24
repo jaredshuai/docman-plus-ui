@@ -186,8 +186,8 @@ const deadlineLoading = ref(false);
 
 const loadProjects = async () => {
   try {
-    const res = await listProject({ pageNum: 1, pageSize: 1000 } as any);
-    projectList.value = (res.data?.rows || []).map((p: any) => ({ id: p.id, name: p.name }));
+    const res = (await listProject({ pageNum: 1, pageSize: 1000 } as any)) as any;
+    projectList.value = (res?.rows || []).map((p: any) => ({ id: p.id, name: p.name }));
   } catch (e) {
     ElMessage.error('获取项目列表失败');
   }
