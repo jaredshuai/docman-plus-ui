@@ -8,8 +8,8 @@ import { errorCode } from '@/utils/errorCode';
 import { LoadingInstance } from 'element-plus/es/components/loading/src/loading';
 import FileSaver from 'file-saver';
 import { getLanguage } from '@/lang';
-import { encryptBase64, encryptWithAes, generateAesKey, decryptWithAes, decryptBase64 } from '@/utils/crypto';
-import { encrypt, decrypt } from '@/utils/jsencrypt';
+import { encryptBase64, encryptWithAes, generateAesKey } from '@/utils/crypto';
+import { encrypt } from '@/utils/jsencrypt';
 import router from '@/router';
 
 const encryptHeader = 'encrypt-key';
@@ -104,22 +104,6 @@ service.interceptors.request.use(
 // 响应拦截器
 service.interceptors.response.use(
   (res: AxiosResponse) => {
-    if (import.meta.env.VITE_APP_ENCRYPT === 'true') {
-      // 加密后的 AES 秘钥
-      const keyStr = res.headers[encryptHeader];
-      // 加密
-      if (keyStr != null && keyStr != '') {
-        const data = res.data;
-        // 请求体 AES 解密
-        const base64Str = decrypt(keyStr);
-        // base64 解码 得到请求头的 AES 秘钥
-        const aesKey = decryptBase64(base64Str.toString());
-        // aesKey 解码 data
-        const decryptData = decryptWithAes(data, aesKey);
-        // 将结果 (得到的是 JSON 字符串) 转为 JSON
-        res.data = JSON.parse(decryptData);
-      }
-    }
     // 未设置状态码则默认成功状态
     const code = res.data.code || HttpStatus.SUCCESS;
     // 获取错误信息
