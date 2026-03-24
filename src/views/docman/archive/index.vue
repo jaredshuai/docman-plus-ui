@@ -4,6 +4,15 @@
       <template #content>归档详情</template>
     </el-page-header>
 
+    <el-alert
+      v-if="!hasProjectId"
+      title="请先在项目管理中选择项目后再进入归档管理"
+      type="info"
+      show-icon
+      :closable="false"
+      style="margin-top: 16px"
+    />
+
     <el-card v-loading="loading" shadow="hover" style="margin-top: 20px">
       <template #header>
         <div class="card-header">
@@ -84,7 +93,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, toRefs, getCurrentInstance, ComponentInternalInstance } from 'vue';
+import { computed, ref, onMounted, toRefs, getCurrentInstance, ComponentInternalInstance } from 'vue';
 import { useRoute } from 'vue-router';
 import { getArchive, archiveProject, listArchive, downloadArchive } from '@/api/docman/archive';
 import { DocArchivePackage } from '@/api/docman/types';
@@ -95,6 +104,7 @@ const { doc_archive_status } = toRefs<any>(proxy?.useDict('doc_archive_status'))
 
 const route = useRoute();
 const projectId = ref(Number(route.query.projectId));
+const hasProjectId = computed(() => Number.isFinite(projectId.value) && projectId.value > 0);
 const loading = ref(true);
 const archiveLoading = ref(false);
 const historyLoading = ref(false);
@@ -104,7 +114,11 @@ const activeNames = ref<string[]>([]);
 
 /** 获取归档信息 */
 const getArchiveInfo = async () => {
-  if (!projectId.value) return;
+  if (!hasProjectId.value) {
+    archiveInfo.value = null;
+    loading.value = false;
+    return;
+  }
   loading.value = true;
   try {
     const res = await getArchive(projectId.value);
@@ -118,6 +132,10 @@ const getArchiveInfo = async () => {
 
 /** 发起归档 */
 const handleArchive = async () => {
+  if (!hasProjectId.value) {
+    ElMessage.warning('请先在项目管理中选择项目');
+    return;
+  }
   await ElMessageBox.confirm('是否确认归档该项目？归档后不可修改。', '系统提示', {
     confirmButtonText: '确定',
     cancelButtonText: '取消',
@@ -147,6 +165,11 @@ const handleDownload = (archiveId: number) => {
 
 /** 获取历史列表 */
 const getHistoryList = async () => {
+  if (!hasProjectId.value) {
+    historyList.value = [];
+    historyLoading.value = false;
+    return;
+  }
   historyLoading.value = true;
   try {
     const res = await listArchive(projectId.value);

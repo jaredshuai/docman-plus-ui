@@ -4,6 +4,15 @@
       <template #content>流程编排</template>
     </el-page-header>
 
+    <el-alert
+      v-if="!hasProjectId"
+      title="请先在项目管理中选择项目后再进入流程编排"
+      type="info"
+      show-icon
+      :closable="false"
+      style="margin-top: 16px"
+    />
+
     <el-card style="margin-top: 16px">
       <template #header>流程配置</template>
 
@@ -54,7 +63,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, toRefs, getCurrentInstance, ComponentInternalInstance } from 'vue';
+import { computed, ref, onMounted, toRefs, getCurrentInstance, ComponentInternalInstance } from 'vue';
 import { useRoute } from 'vue-router';
 import { bindProcess, startProcess, getProcessConfig, listProcessDefinitions } from '@/api/docman/process';
 import { ElMessage } from 'element-plus';
@@ -65,11 +74,16 @@ const { doc_process_status } = toRefs(proxy?.useDict('doc_process_status') ?? {}
 
 const route = useRoute();
 const projectId = ref(Number(route.query.projectId));
+const hasProjectId = computed(() => Number.isFinite(projectId.value) && projectId.value > 0);
 const processConfig = ref<DocProcessConfig | null>(null);
 const selectedDefinitionId = ref<number>();
 const definitionList = ref<Array<{ id: number; name: string }>>([]);
 
 async function loadConfig() {
+  if (!hasProjectId.value) {
+    processConfig.value = null;
+    return;
+  }
   try {
     const res = await getProcessConfig(projectId.value);
     processConfig.value = res.data;
@@ -88,6 +102,10 @@ async function loadDefinitions() {
 }
 
 async function handleBind() {
+  if (!hasProjectId.value) {
+    ElMessage.warning('请先在项目管理中选择项目');
+    return;
+  }
   if (!selectedDefinitionId.value) return;
   try {
     await bindProcess(projectId.value, selectedDefinitionId.value);
@@ -99,6 +117,10 @@ async function handleBind() {
 }
 
 async function handleStart() {
+  if (!hasProjectId.value) {
+    ElMessage.warning('请先在项目管理中选择项目');
+    return;
+  }
   try {
     await startProcess(projectId.value);
     ElMessage.success('流程已启动');

@@ -4,9 +4,20 @@
       <template #content>文档中心</template>
     </el-page-header>
 
+    <el-alert
+      v-if="!hasProjectId"
+      title="请先在项目管理中选择项目后再进入文档中心"
+      type="info"
+      show-icon
+      :closable="false"
+      style="margin-top: 16px"
+    />
+
     <el-row :gutter="10" class="mb8" style="margin-top: 16px">
       <el-col :span="1.5">
-        <el-button type="primary" plain icon="Upload" @click="handleUpload" v-hasPermi="['docman:document:upload']">上传文档</el-button>
+        <el-button type="primary" plain icon="Upload" @click="handleUpload" :disabled="!hasProjectId" v-hasPermi="['docman:document:upload']"
+          >上传文档</el-button
+        >
       </el-col>
     </el-row>
 
@@ -68,7 +79,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, reactive, toRefs, getCurrentInstance, ComponentInternalInstance } from 'vue';
+import { computed, ref, onMounted, reactive, toRefs, getCurrentInstance, ComponentInternalInstance } from 'vue';
 import { useRoute } from 'vue-router';
 import { listDocument, uploadDocument, downloadDocument, deleteDocument } from '@/api/docman/document';
 import { DocDocumentRecord, DocDocumentQuery, PageResult } from '@/api/docman/types';
@@ -79,6 +90,7 @@ const { doc_source_type, doc_document_status } = toRefs(proxy?.useDict('doc_sour
 
 const route = useRoute();
 const projectId = ref(Number(route.query.projectId));
+const hasProjectId = computed(() => Number.isFinite(projectId.value) && projectId.value > 0);
 const documentList = ref<DocDocumentRecord[]>([]);
 const total = ref(0);
 const loading = ref(true);
@@ -93,11 +105,23 @@ const upload = reactive({
 
 /** 查询文档列表 */
 const getList = async () => {
+  if (!hasProjectId.value) {
+    documentList.value = [];
+    total.value = 0;
+    loading.value = false;
+    return;
+  }
   loading.value = true;
-  const res = await listDocument(projectId.value, queryParams.value);
-  documentList.value = res.rows;
-  total.value = res.total;
-  loading.value = false;
+  try {
+    const res = await listDocument(projectId.value, queryParams.value);
+    documentList.value = res.rows;
+    total.value = res.total;
+  } catch (error) {
+    console.error('获取文档列表失败', error);
+    ElMessage.error('获取文档列表失败');
+  } finally {
+    loading.value = false;
+  }
 };
 
 /** 下载按钮操作 */
@@ -119,11 +143,19 @@ const handleDelete = async (row: DocDocumentRecord) => {
 
 /** 上传按钮操作 */
 function handleUpload() {
+  if (!hasProjectId.value) {
+    ElMessage.warning('请先在项目管理中选择项目');
+    return;
+  }
   upload.open = true;
 }
 
 /** 提交上传 */
 async function submitUpload(options: UploadRequestOptions) {
+  if (!hasProjectId.value) {
+    ElMessage.warning('请先在项目管理中选择项目');
+    return;
+  }
   const formData = new FormData();
   formData.append('file', options.file);
   formData.append('projectId', String(projectId.value));
