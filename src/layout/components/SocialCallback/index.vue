@@ -6,6 +6,7 @@
 import { login, callback } from '@/api/login';
 import { setToken, getToken } from '@/utils/auth';
 import { LoginData } from '@/api/types';
+import { ElMessage } from 'element-plus';
 
 const route = useRoute();
 const loading = ref(true);
@@ -17,9 +18,13 @@ const loading = ref(true);
 const code = route.query.code as string;
 const state = route.query.state as string;
 const source = route.query.source as string;
-const stateJson = JSON.parse(atob(state));
-const tenantId = (stateJson.tenantId as string) ? (stateJson.tenantId as string) : '000000';
-const domain = stateJson.domain as string;
+const parseState = () => {
+  try {
+    return JSON.parse(atob(state));
+  } catch (error) {
+    throw new Error('第三方登录状态参数无效，请重新发起登录');
+  }
+};
 
 const processResponse = async (res: any) => {
   if (res.code !== 200) {
@@ -35,6 +40,7 @@ const processResponse = async (res: any) => {
 };
 
 const handleError = (error: any) => {
+  loading.value = false;
   ElMessage.error(error.message);
   setTimeout(() => {
     location.href = import.meta.env.VITE_APP_CONTEXT_PATH + 'index';
@@ -62,6 +68,9 @@ const loginByCode = async (data: LoginData) => {
 };
 
 const init = async () => {
+  const stateJson = parseState();
+  const tenantId = (stateJson.tenantId as string) ? (stateJson.tenantId as string) : '000000';
+  const domain = stateJson.domain as string;
   // 如果域名不相等 则重定向处理
   const host = window.location.host;
   if (domain !== host) {
@@ -89,7 +98,7 @@ const init = async () => {
 
 onMounted(() => {
   nextTick(() => {
-    init();
+    init().catch(handleError);
   });
 });
 </script>

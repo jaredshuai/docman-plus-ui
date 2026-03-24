@@ -1,6 +1,7 @@
 <template>
   <div>
     <el-dialog v-model="userDialog.visible.value" :title="userDialog.title.value" width="80%" append-to-body>
+      <el-alert v-if="loadError" :title="loadError" type="warning" show-icon :closable="false" class="mb-[10px]" />
       <el-row :gutter="20">
         <!-- 部门树 -->
         <el-col :lg="4" :xs="24" style="">
@@ -101,6 +102,7 @@
 import api from '@/api/system/user';
 import { UserQuery, UserVO } from '@/api/system/user/types';
 import { DeptTreeVO, DeptVO } from '@/api/system/dept/types';
+import { ElMessage } from 'element-plus';
 import { VxeTableInstance } from 'vxe-table';
 import useDialog from '@/hooks/useDialog';
 
@@ -129,6 +131,7 @@ const dateRange = ref<[DateModelType, DateModelType]>(['', '']);
 const deptName = ref('');
 const deptOptions = ref<DeptTreeVO[]>([]);
 const selectUserList = ref<UserVO[]>([]);
+const loadError = ref('');
 
 const deptTreeRef = ref<ElTreeInstance>();
 const queryFormRef = ref<ElFormInstance>();
@@ -191,18 +194,36 @@ const filterNode = (value: string, data: any) => {
 
 /** 查询部门下拉树结构 */
 const getTreeSelect = async () => {
-  const res = await api.deptTreeSelect();
-  deptOptions.value = res.data;
+  try {
+    const res = await api.deptTreeSelect();
+    deptOptions.value = res.data;
+  } catch (error) {
+    deptOptions.value = [];
+    if (!isSessionError(error)) {
+      ElMessage.error('部门树加载失败，请稍后重试');
+    }
+  }
 };
 
 /** 查询用户列表 */
 const getList = async () => {
   loading.value = true;
   queryParams.value.userIds = prop.userIds;
-  const res = await api.listUser(proxy?.addDateRange(queryParams.value, dateRange.value));
-  loading.value = false;
-  userList.value = res.rows;
-  total.value = res.total;
+  loadError.value = '';
+  try {
+    const res = await api.listUser(proxy?.addDateRange(queryParams.value, dateRange.value));
+    userList.value = res.rows;
+    total.value = res.total;
+  } catch (error) {
+    userList.value = [];
+    total.value = 0;
+    if (!isSessionError(error)) {
+      loadError.value = '用户列表加载失败，请刷新后重试';
+      ElMessage.error(loadError.value);
+    }
+  } finally {
+    loading.value = false;
+  }
 };
 
 const pageList = async () => {
@@ -274,14 +295,21 @@ const handleCloseTag = (user: UserVO) => {
 
 const initSelectUser = async () => {
   if (defaultSelectUserIds.value.length > 0) {
-    const { data } = await api.optionSelect(defaultSelectUserIds.value);
-    selectUserList.value = data;
-    const users = userList.value.filter((item) => {
-      return defaultSelectUserIds.value.includes(String(item.userId));
-    });
-    await nextTick(() => {
-      tableRef.value.setCheckboxRow(users, true);
-    });
+    try {
+      const { data } = await api.optionSelect(defaultSelectUserIds.value);
+      selectUserList.value = data;
+      const users = (userList.value || []).filter((item) => {
+        return defaultSelectUserIds.value.includes(String(item.userId));
+      });
+      await nextTick(() => {
+        tableRef.value?.setCheckboxRow(users, true);
+      });
+    } catch (error) {
+      selectUserList.value = [];
+      if (!isSessionError(error)) {
+        ElMessage.error('默认选中用户加载失败，请稍后重试');
+      }
+    }
   }
 };
 const close = () => {
@@ -292,17 +320,24 @@ watch(
   () => userDialog.visible.value,
   async (newValue: boolean) => {
     if (newValue) {
+      loadError.value = '';
       await getTreeSelect(); // 初始化部门数据
       await getList(); // 初始化列表数据
       await initSelectUser();
     } else {
-      tableRef.value.clearCheckboxReserve();
-      tableRef.value.clearCheckboxRow();
+      tableRef.value?.clearCheckboxReserve();
+      tableRef.value?.clearCheckboxRow();
       resetQuery(false);
       selectUserList.value = [];
+      loadError.value = '';
     }
   }
 );
+
+const isSessionError = (error: unknown) => {
+  const message = error instanceof Error ? error.message : String(error ?? '');
+  return message.includes('无效的会话') || message.includes('会话已过期');
+};
 
 defineExpose({
   open: userDialog.openDialog,

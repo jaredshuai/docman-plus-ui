@@ -1,5 +1,6 @@
 <template>
   <div class="app-container" data-testid="project-page">
+    <el-alert v-if="loadError" :title="loadError" type="warning" show-icon :closable="false" class="mb8" />
     <el-form :model="queryParams" ref="queryRef" :inline="true" data-testid="project-search-form">
       <el-form-item label="项目名称" prop="name">
         <el-input v-model="queryParams.name" placeholder="请输入" clearable data-testid="project-search-name" @keyup.enter="handleQuery" />
@@ -148,6 +149,7 @@ const { doc_customer_type, doc_business_type, doc_project_status } = toRefs<any>
 const projectList = ref<DocProject[]>([]);
 const total = ref(0);
 const loading = ref(true);
+const loadError = ref('');
 
 const queryRef = ref<ElFormInstance>();
 const projectFormRef = ref<ElFormInstance>();
@@ -187,10 +189,21 @@ const { queryParams, form, rules } = toRefs(data);
 /** 查询项目列表 */
 const getList = async () => {
   loading.value = true;
-  const res = await listProject(queryParams.value);
-  projectList.value = res.rows ?? [];
-  total.value = res.total ?? 0;
-  loading.value = false;
+  loadError.value = '';
+  try {
+    const res = await listProject(queryParams.value);
+    projectList.value = res.rows ?? [];
+    total.value = res.total ?? 0;
+  } catch (error) {
+    projectList.value = [];
+    total.value = 0;
+    if (!isSessionError(error)) {
+      loadError.value = '项目列表加载失败，请刷新后重试';
+      ElMessage.error(loadError.value);
+    }
+  } finally {
+    loading.value = false;
+  }
 };
 
 /** 搜索按钮操作 */
@@ -298,12 +311,23 @@ function handleArchive(id: number) {
   proxy?.$modal
     .confirm('确认归档该项目？归档后不可修改。')
     .then(async () => {
-      await archiveProject(id);
-      proxy?.$modal.msgSuccess('归档成功');
-      getList();
+      try {
+        await archiveProject(id);
+        proxy?.$modal.msgSuccess('归档成功');
+        getList();
+      } catch (error) {
+        if (!isSessionError(error)) {
+          ElMessage.error('归档失败，请稍后重试');
+        }
+      }
     })
     .catch(() => {});
 }
+
+const isSessionError = (error: unknown) => {
+  const message = error instanceof Error ? error.message : String(error ?? '');
+  return message.includes('无效的会话') || message.includes('会话已过期');
+};
 
 onMounted(() => getList());
 </script>

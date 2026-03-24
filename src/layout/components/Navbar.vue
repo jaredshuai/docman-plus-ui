@@ -98,6 +98,7 @@ import { dynamicClear, dynamicTenant } from '@/api/system/tenant';
 import { TenantVO } from '@/api/types';
 import notice from './notice/index.vue';
 import router from '@/router';
+import { ElMessage } from 'element-plus';
 import { ElMessageBoxOptions } from 'element-plus/es/components/message-box/src/message-box.type';
 
 const appStore = useAppStore();
@@ -125,28 +126,42 @@ const openSearchMenu = () => {
 // 动态切换
 const dynamicTenantEvent = async (tenantId: string) => {
   if (companyName.value != null && companyName.value !== '') {
-    await dynamicTenant(tenantId);
-    dynamic.value = true;
-    await proxy?.$router.push('/');
-    await proxy?.$tab.closeAllPage();
-    await proxy?.$tab.refreshPage();
+    try {
+      await dynamicTenant(tenantId);
+      dynamic.value = true;
+      await proxy?.$router.push('/');
+      await proxy?.$tab.closeAllPage();
+      await proxy?.$tab.refreshPage();
+    } catch (error) {
+      ElMessage.error('租户切换失败，请稍后重试');
+    }
   }
 };
 
 const dynamicClearEvent = async () => {
-  await dynamicClear();
-  dynamic.value = false;
-  await proxy?.$router.push('/');
-  await proxy?.$tab.closeAllPage();
-  await proxy?.$tab.refreshPage();
+  try {
+    await dynamicClear();
+    dynamic.value = false;
+    await proxy?.$router.push('/');
+    await proxy?.$tab.closeAllPage();
+    await proxy?.$tab.refreshPage();
+  } catch (error) {
+    ElMessage.error('清除租户切换状态失败，请稍后重试');
+  }
 };
 
 /** 租户列表 */
 const initTenantList = async () => {
-  const { data } = await getTenantList(true);
-  tenantEnabled.value = data.tenantEnabled === undefined ? true : data.tenantEnabled;
-  if (tenantEnabled.value) {
-    tenantList.value = data.voList;
+  try {
+    const { data } = await getTenantList(true);
+    tenantEnabled.value = data.tenantEnabled === undefined ? true : data.tenantEnabled;
+    if (tenantEnabled.value) {
+      tenantList.value = data.voList;
+    }
+  } catch (error) {
+    tenantEnabled.value = false;
+    tenantList.value = [];
+    ElMessage.error('租户列表加载失败，请刷新后重试');
   }
 };
 

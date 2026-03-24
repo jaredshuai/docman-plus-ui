@@ -86,9 +86,12 @@ const fileAccept = computed(() => props.fileType.map((type) => `.${type}`).join(
 watch(
   () => props.modelValue,
   async (val) => {
-    if (val) {
+    if (!val) {
+      fileList.value = [];
+      return [];
+    }
+    try {
       let temp = 1;
-      // 首先将值转为数组
       let list: any[] = [];
       if (Array.isArray(val)) {
         list = val;
@@ -102,15 +105,14 @@ watch(
           };
         });
       }
-      // 然后将数组转为对象数组
       fileList.value = list.map((item) => {
         item = { name: item.name, url: item.url, ossId: item.ossId };
         item.uid = item.uid || new Date().getTime() + temp++;
         return item;
       });
-    } else {
+    } catch (error) {
       fileList.value = [];
-      return [];
+      proxy?.$modal.msgError('文件列表加载失败，请刷新后重试');
     }
   },
   { deep: true, immediate: true }
@@ -153,7 +155,11 @@ const handleExceed = () => {
 
 // 上传失败
 const handleUploadError = () => {
+  number.value = Math.max(number.value - 1, 0);
   proxy?.$modal.msgError('上传文件失败');
+  if (number.value === 0) {
+    proxy?.$modal.closeLoading();
+  }
 };
 
 // 上传成功回调

@@ -94,8 +94,11 @@ const fileAccept = computed(() => props.fileType.map((type) => `.${type}`).join(
 watch(
   () => props.modelValue,
   async (val: string) => {
-    if (val) {
-      // 首先将值转为数组
+    if (!val) {
+      fileList.value = [];
+      return [];
+    }
+    try {
       let list: OssVO[] = [];
       if (Array.isArray(val)) {
         list = val as OssVO[];
@@ -103,21 +106,18 @@ watch(
         const res = await listByIds(val);
         list = res.data;
       }
-      // 然后将数组转为对象数组
       fileList.value = list.map((item) => {
-        // 字符串回显处理 如果此处存的是url可直接回显 如果存的是id需要调用接口查出来
         let itemData;
         if (typeof item === 'string') {
           itemData = { name: item, url: item };
         } else {
-          // 此处name使用ossId 防止删除出现重名
           itemData = { name: item.ossId, url: item.url, ossId: item.ossId };
         }
         return itemData;
       });
-    } else {
+    } catch (error) {
       fileList.value = [];
-      return [];
+      proxy?.$modal.msgError('图片列表加载失败，请刷新后重试');
     }
   },
   { deep: true, immediate: true }
@@ -159,7 +159,14 @@ const handleBeforeUpload = (file: any) => {
   if (props.compressSupport && file.size / 1024 > props.compressTargetSize) {
     proxy?.$modal.loading('正在上传图片，请稍候...');
     number.value++;
-    return compressAccurately(file, props.compressTargetSize);
+    return compressAccurately(file, props.compressTargetSize).catch((error) => {
+      number.value = Math.max(number.value - 1, 0);
+      if (number.value === 0) {
+        proxy?.$modal.closeLoading();
+      }
+      proxy?.$modal.msgError('图片压缩失败，请重试');
+      return Promise.reject(error);
+    });
   } else {
     proxy?.$modal.loading('正在上传图片，请稍候...');
     number.value++;
@@ -211,8 +218,11 @@ const uploadedSuccessfully = () => {
 
 // 上传失败
 const handleUploadError = () => {
+  number.value = Math.max(number.value - 1, 0);
   proxy?.$modal.msgError('上传图片失败');
-  proxy?.$modal.closeLoading();
+  if (number.value === 0) {
+    proxy?.$modal.closeLoading();
+  }
 };
 
 // 预览

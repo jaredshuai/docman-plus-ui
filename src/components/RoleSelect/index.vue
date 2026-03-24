@@ -1,6 +1,7 @@
 <template>
   <div>
     <el-dialog v-model="roleDialog.visible.value" :title="roleDialog.title.value" width="80%" append-to-body>
+      <el-alert v-if="loadError" :title="loadError" type="warning" show-icon :closable="false" class="mb-[10px]" />
       <transition :enter-active-class="proxy?.animate.searchAnimate.enter" :leave-active-class="proxy?.animate.searchAnimate.leave">
         <div v-show="showSearch" class="mb-[10px]">
           <el-card shadow="hover">
@@ -76,6 +77,7 @@
 
 <script setup lang="ts">
 import { RoleVO, RoleQuery } from '@/api/system/role/types';
+import { ElMessage } from 'element-plus';
 import { VxeTableInstance } from 'vxe-table';
 import useDialog from '@/hooks/useDialog';
 import api from '@/api/system/role';
@@ -101,6 +103,7 @@ const showSearch = ref(true);
 const total = ref(0);
 const dateRange = ref<[DateModelType, DateModelType]>(['', '']);
 const selectRoleList = ref<RoleVO[]>([]);
+const loadError = ref('');
 
 const roleDialog = useDialog({
   title: '角色选择'
@@ -143,11 +146,24 @@ const computedIds = (data) => {
  */
 const getList = () => {
   loading.value = true;
-  api.listRole(proxy?.addDateRange(queryParams.value, dateRange.value)).then((res) => {
-    roleList.value = res.rows;
-    total.value = res.total;
-    loading.value = false;
-  });
+  loadError.value = '';
+  api
+    .listRole(proxy?.addDateRange(queryParams.value, dateRange.value))
+    .then((res) => {
+      roleList.value = res.rows;
+      total.value = res.total;
+    })
+    .catch((error) => {
+      roleList.value = [];
+      total.value = 0;
+      if (!isSessionError(error)) {
+        loadError.value = '角色列表加载失败，请刷新后重试';
+        ElMessage.error(loadError.value);
+      }
+    })
+    .finally(() => {
+      loading.value = false;
+    });
 };
 const pageList = async () => {
   await getList();
@@ -213,14 +229,21 @@ const handleCloseTag = (user: RoleVO) => {
  */
 const initSelectRole = async () => {
   if (defaultSelectRoleIds.value.length > 0) {
-    const { data } = await api.optionSelect(defaultSelectRoleIds.value);
-    selectRoleList.value = data;
-    const users = roleList.value.filter((item) => {
-      return defaultSelectRoleIds.value.includes(String(item.roleId));
-    });
-    await nextTick(() => {
-      tableRef.value.setCheckboxRow(users, true);
-    });
+    try {
+      const { data } = await api.optionSelect(defaultSelectRoleIds.value);
+      selectRoleList.value = data;
+      const users = (roleList.value || []).filter((item) => {
+        return defaultSelectRoleIds.value.includes(String(item.roleId));
+      });
+      await nextTick(() => {
+        tableRef.value?.setCheckboxRow(users, true);
+      });
+    } catch (error) {
+      selectRoleList.value = [];
+      if (!isSessionError(error)) {
+        ElMessage.error('默认选中角色加载失败，请稍后重试');
+      }
+    }
   }
 };
 const close = () => {
@@ -228,14 +251,17 @@ const close = () => {
 };
 watch(
   () => roleDialog.visible.value,
-  (newValue: boolean) => {
+  async (newValue: boolean) => {
     if (newValue) {
+      loadError.value = '';
+      await getList();
       initSelectRole();
     } else {
-      tableRef.value.clearCheckboxReserve();
-      tableRef.value.clearCheckboxRow();
+      tableRef.value?.clearCheckboxReserve();
+      tableRef.value?.clearCheckboxRow();
       resetQuery();
       selectRoleList.value = [];
+      loadError.value = '';
     }
   }
 );
@@ -247,4 +273,9 @@ defineExpose({
   open: roleDialog.openDialog,
   close: roleDialog.closeDialog
 });
+
+const isSessionError = (error: unknown) => {
+  const message = error instanceof Error ? error.message : String(error ?? '');
+  return message.includes('无效的会话') || message.includes('会话已过期');
+};
 </script>
