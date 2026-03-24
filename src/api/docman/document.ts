@@ -1,9 +1,9 @@
 import request from '@/utils/request';
 import { AxiosPromise } from 'axios';
-import { DocDocumentRecord, DocDocumentQuery, PageResult } from './types';
+import { DocDocumentRecord, DocDocumentQuery } from './types';
 import download from '@/plugins/download';
 
-export function listDocument(projectId: number, query: DocDocumentQuery): AxiosPromise<PageResult<DocDocumentRecord>> {
+export function listDocument(projectId: number, query: DocDocumentQuery): AxiosPromise<any> {
   return request({ url: '/docman/document/list', method: 'get', params: { projectId, ...query } });
 }
 

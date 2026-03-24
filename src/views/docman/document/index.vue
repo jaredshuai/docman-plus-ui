@@ -95,8 +95,8 @@ const upload = reactive({
 const getList = async () => {
   loading.value = true;
   const res = await listDocument(projectId.value, queryParams.value);
-  documentList.value = res.data.rows;
-  total.value = res.data.total;
+  documentList.value = res.rows;
+  total.value = res.total;
   loading.value = false;
 };
 
