@@ -43,9 +43,24 @@ export interface PluginStats {
   avgCostMs: number;
 }
 
+/** 工作台待办摘要 */
+export interface TodoSummary {
+  myProjectCount: number;
+  activeProjectCount: number;
+  overdueNodeCount: number;
+  waitingTaskCount: number;
+  copiedTaskCount: number;
+  finishedTaskCount: number;
+}
+
 /** 获取概览数据 */
 export function getOverview(): AxiosPromise<DashboardOverview> {
   return request({ url: '/docman/dashboard/overview', method: 'get' });
+}
+
+/** 获取工作台待办摘要 */
+export function getTodoSummary(): AxiosPromise<TodoSummary> {
+  return request({ url: '/docman/dashboard/todo-summary', method: 'get' });
 }
 
 /** 获取项目进度 */
