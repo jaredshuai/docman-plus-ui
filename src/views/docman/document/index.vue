@@ -79,19 +79,19 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, onMounted, reactive, toRefs, getCurrentInstance, ComponentInternalInstance } from 'vue';
+import { ref, reactive, toRefs, getCurrentInstance, ComponentInternalInstance } from 'vue';
 import { useRoute } from 'vue-router';
 import { listDocument, uploadDocument, downloadDocument, deleteDocument } from '@/api/docman/document';
 import { DocDocumentRecord, DocDocumentQuery, PageResult } from '@/api/docman/types';
 import { ElMessage, ElMessageBox, UploadInstance, UploadRequestOptions } from 'element-plus';
 import { handleApiError } from '@/utils/error';
+import { useRouteProjectId } from '@/hooks/useRouteProjectId';
 
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 const { doc_source_type, doc_document_status } = toRefs(proxy?.useDict('doc_source_type', 'doc_document_status') ?? {});
 
 const route = useRoute();
-const projectId = ref(Number(route.query.projectId));
-const hasProjectId = computed(() => Number.isFinite(projectId.value) && projectId.value > 0);
+const { projectId, hasProjectId } = useRouteProjectId(route);
 const documentList = ref<DocDocumentRecord[]>([]);
 const total = ref(0);
 const loading = ref(true);
@@ -186,5 +186,13 @@ function handleClose() {
   uploadRef.value?.clearFiles();
 }
 
-onMounted(() => getList());
+watch(
+  projectId,
+  () => {
+    queryParams.value.pageNum = 1;
+    loadError.value = '';
+    getList();
+  },
+  { immediate: true }
+);
 </script>

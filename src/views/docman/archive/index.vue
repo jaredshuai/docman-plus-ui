@@ -93,18 +93,18 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, onMounted, toRefs, getCurrentInstance, ComponentInternalInstance } from 'vue';
+import { ref, toRefs, getCurrentInstance, ComponentInternalInstance } from 'vue';
 import { useRoute } from 'vue-router';
 import { getArchive, archiveProject, listArchive, downloadArchive } from '@/api/docman/archive';
 import { DocArchivePackage } from '@/api/docman/types';
 import { ElMessage, ElMessageBox } from 'element-plus';
+import { useRouteProjectId } from '@/hooks/useRouteProjectId';
 
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 const { doc_archive_status } = toRefs<any>(proxy?.useDict('doc_archive_status'));
 
 const route = useRoute();
-const projectId = ref(Number(route.query.projectId));
-const hasProjectId = computed(() => Number.isFinite(projectId.value) && projectId.value > 0);
+const { projectId, hasProjectId } = useRouteProjectId(route);
 const loading = ref(true);
 const archiveLoading = ref(false);
 const historyLoading = ref(false);
@@ -188,9 +188,15 @@ const handleCollapseChange = (names: any) => {
   }
 };
 
-onMounted(() => {
-  getArchiveInfo();
-});
+watch(
+  projectId,
+  () => {
+    archiveInfo.value = null;
+    historyList.value = [];
+    getArchiveInfo();
+  },
+  { immediate: true }
+);
 </script>
 
 <style scoped>

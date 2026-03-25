@@ -93,18 +93,20 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, onMounted, reactive, toRefs, getCurrentInstance, ComponentInternalInstance } from 'vue';
+import { ref, onMounted, reactive, toRefs, getCurrentInstance, ComponentInternalInstance } from 'vue';
 import { useRoute } from 'vue-router';
 import { listExecutionLogs, listPlugins, triggerExecution, type DocPluginExecutionLogQuery, type DocPluginExecutionLogVo } from '@/api/docman/plugin';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { listProject } from '@/api/docman/project';
 import { DocProject, DocPluginInfo } from '@/api/docman/types';
 import { handleApiError } from '@/utils/error';
+import { useRouteProjectId } from '@/hooks/useRouteProjectId';
 
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 const { doc_plugin_execution_status } = toRefs<any>(proxy?.useDict('doc_plugin_execution_status'));
 
 const route = useRoute();
+const { projectId, hasProjectId } = useRouteProjectId(route);
 const queryRef = ref<any>();
 const logList = ref<DocPluginExecutionLogVo[]>([]);
 const pluginList = ref<DocPluginInfo[]>([]);
@@ -129,7 +131,6 @@ const data = reactive({
 });
 
 const { queryParams, drawer } = toRefs(data);
-const hasProjectId = computed(() => Number.isFinite(Number(queryParams.value.projectId)) && Number(queryParams.value.projectId) > 0);
 
 /** 查询插件列表 */
 async function getPluginList() {
@@ -230,18 +231,19 @@ function formatJson(jsonStr: string | undefined) {
 }
 
 onMounted(() => {
-  const projectId = route.query.projectId;
-  if (projectId) {
-    queryParams.value.projectId = Number(projectId);
-  }
   Promise.all([getProjectOptions(), getPluginList()]);
-  // Only load logs if projectId is present (backend requires it)
-  if (hasProjectId.value) {
-    getList();
-  } else {
-    loading.value = false;
-  }
 });
+
+watch(
+  projectId,
+  (value) => {
+    queryParams.value.projectId = value;
+    queryParams.value.pageNum = 1;
+    loadError.value = '';
+    getList();
+  },
+  { immediate: true }
+);
 </script>
 
 <style scoped>

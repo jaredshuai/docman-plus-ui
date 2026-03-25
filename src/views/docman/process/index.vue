@@ -63,19 +63,19 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, onMounted, toRefs, getCurrentInstance, ComponentInternalInstance } from 'vue';
+import { ref, onMounted, toRefs, getCurrentInstance, ComponentInternalInstance } from 'vue';
 import { useRoute } from 'vue-router';
 import { bindProcess, startProcess, getProcessConfig, listProcessDefinitions } from '@/api/docman/process';
 import { ElMessage } from 'element-plus';
 import { DocProcessConfig } from '@/api/docman/types';
 import { handleApiError } from '@/utils/error';
+import { useRouteProjectId } from '@/hooks/useRouteProjectId';
 
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 const { doc_process_status } = toRefs(proxy?.useDict('doc_process_status') ?? {});
 
 const route = useRoute();
-const projectId = ref(Number(route.query.projectId));
-const hasProjectId = computed(() => Number.isFinite(projectId.value) && projectId.value > 0);
+const { projectId, hasProjectId } = useRouteProjectId(route);
 const processConfig = ref<DocProcessConfig | null>(null);
 const selectedDefinitionId = ref<number>();
 const definitionList = ref<Array<{ id: number; name: string }>>([]);
@@ -135,6 +135,17 @@ async function handleStart() {
 }
 
 onMounted(() => {
-  Promise.all([loadConfig(), loadDefinitions()]);
+  loadDefinitions();
 });
+
+watch(
+  projectId,
+  () => {
+    processConfig.value = null;
+    selectedDefinitionId.value = undefined;
+    loadError.value = '';
+    loadConfig();
+  },
+  { immediate: true }
+);
 </script>

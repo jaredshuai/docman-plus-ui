@@ -97,7 +97,9 @@ export const dynamicRoutes: RouteRecordRaw[] = [
     path: '/docman',
     component: Layout,
     hidden: true,
+    redirect: '/docman/project',
     permissions: ['docman:project:list'],
+    meta: { title: '文档管理', icon: 'documentation' },
     children: [
       {
         path: 'dashboard',
