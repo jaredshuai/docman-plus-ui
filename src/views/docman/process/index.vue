@@ -68,6 +68,7 @@ import { useRoute } from 'vue-router';
 import { bindProcess, startProcess, getProcessConfig, listProcessDefinitions } from '@/api/docman/process';
 import { ElMessage } from 'element-plus';
 import { DocProcessConfig } from '@/api/docman/types';
+import { handleApiError } from '@/utils/error';
 
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 const { doc_process_status } = toRefs(proxy?.useDict('doc_process_status') ?? {});
@@ -78,6 +79,7 @@ const hasProjectId = computed(() => Number.isFinite(projectId.value) && projectI
 const processConfig = ref<DocProcessConfig | null>(null);
 const selectedDefinitionId = ref<number>();
 const definitionList = ref<Array<{ id: number; name: string }>>([]);
+const loadError = ref('');
 
 async function loadConfig() {
   if (!hasProjectId.value) {
@@ -88,7 +90,8 @@ async function loadConfig() {
     const res = await getProcessConfig(projectId.value);
     processConfig.value = res.data;
   } catch (e) {
-    ElMessage.error('获取流程配置失败');
+    processConfig.value = null;
+    loadError.value = handleApiError(e, '获取流程配置失败');
   }
 }
 
@@ -97,7 +100,8 @@ async function loadDefinitions() {
     const res = await listProcessDefinitions();
     definitionList.value = res.data;
   } catch (e) {
-    ElMessage.error('获取流程模板失败');
+    definitionList.value = [];
+    handleApiError(e, '获取流程模板失败');
   }
 }
 
@@ -112,7 +116,7 @@ async function handleBind() {
     ElMessage.success('绑定成功');
     loadConfig();
   } catch (e) {
-    ElMessage.error('绑定失败');
+    handleApiError(e, '绑定失败');
   }
 }
 
@@ -126,7 +130,7 @@ async function handleStart() {
     ElMessage.success('流程已启动');
     loadConfig();
   } catch (e) {
-    ElMessage.error('启动失败');
+    handleApiError(e, '启动失败');
   }
 }
 

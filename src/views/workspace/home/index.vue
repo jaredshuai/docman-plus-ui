@@ -92,6 +92,7 @@ import { ElMessage } from 'element-plus';
 import { getTodoSummary, type TodoSummary } from '@/api/docman/dashboard';
 import { listMyProject } from '@/api/docman/project';
 import type { DocProject } from '@/api/docman/types';
+import { handleApiError } from '@/utils/error';
 
 const router = useRouter();
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
@@ -177,7 +178,7 @@ const loadWorkspace = async () => {
     summary.value = summaryRes.data;
     projectList.value = projectRes.data || [];
   } catch (error) {
-    ElMessage.error('工作台数据加载失败');
+    handleApiError(error, '工作台数据加载失败');
   } finally {
     loading.value = false;
   }

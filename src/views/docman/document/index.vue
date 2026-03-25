@@ -84,6 +84,7 @@ import { useRoute } from 'vue-router';
 import { listDocument, uploadDocument, downloadDocument, deleteDocument } from '@/api/docman/document';
 import { DocDocumentRecord, DocDocumentQuery, PageResult } from '@/api/docman/types';
 import { ElMessage, ElMessageBox, UploadInstance, UploadRequestOptions } from 'element-plus';
+import { handleApiError } from '@/utils/error';
 
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 const { doc_source_type, doc_document_status } = toRefs(proxy?.useDict('doc_source_type', 'doc_document_status') ?? {});
@@ -94,6 +95,7 @@ const hasProjectId = computed(() => Number.isFinite(projectId.value) && projectI
 const documentList = ref<DocDocumentRecord[]>([]);
 const total = ref(0);
 const loading = ref(true);
+const loadError = ref('');
 const queryParams = ref<DocDocumentQuery>({ pageNum: 1, pageSize: 20 });
 
 const uploadRef = ref<UploadInstance>();
@@ -112,13 +114,15 @@ const getList = async () => {
     return;
   }
   loading.value = true;
+  loadError.value = '';
   try {
     const res = await listDocument(projectId.value, queryParams.value);
     documentList.value = res.rows;
     total.value = res.total;
   } catch (error) {
-    console.error('获取文档列表失败', error);
-    ElMessage.error('获取文档列表失败');
+    documentList.value = [];
+    total.value = 0;
+    loadError.value = handleApiError(error, '获取文档列表失败');
   } finally {
     loading.value = false;
   }
@@ -136,8 +140,8 @@ const handleDelete = async (row: DocDocumentRecord) => {
     await deleteDocument(row.id);
     ElMessage.success('删除成功');
     getList();
-  } catch {
-    ElMessage.error('删除失败，请重试');
+  } catch (error) {
+    handleApiError(error, '删除失败，请重试');
   }
 };
 
@@ -167,8 +171,7 @@ async function submitUpload(options: UploadRequestOptions) {
     upload.open = false;
     getList();
   } catch (error) {
-    console.error('上传失败', error);
-    ElMessage.error('上传失败，请重试');
+    handleApiError(error, '上传失败，请重试');
   } finally {
     upload.isUploading = false;
   }

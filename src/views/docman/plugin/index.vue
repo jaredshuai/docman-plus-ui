@@ -99,6 +99,7 @@ import { listExecutionLogs, listPlugins, triggerExecution, type DocPluginExecuti
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { listProject } from '@/api/docman/project';
 import { DocProject, DocPluginInfo } from '@/api/docman/types';
+import { handleApiError } from '@/utils/error';
 
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 const { doc_plugin_execution_status } = toRefs<any>(proxy?.useDict('doc_plugin_execution_status'));
@@ -111,6 +112,7 @@ const projectOptions = ref<DocProject[]>([]);
 const loading = ref(false);
 const pluginLoading = ref(true);
 const total = ref(0);
+const loadError = ref('');
 
 const data = reactive({
   queryParams: {
@@ -136,7 +138,8 @@ async function getPluginList() {
     const res = await listPlugins();
     pluginList.value = res.data;
   } catch (e) {
-    ElMessage.error('获取插件列表失败');
+    pluginList.value = [];
+    handleApiError(e, '获取插件列表失败');
   } finally {
     pluginLoading.value = false;
   }
@@ -151,12 +154,15 @@ async function getList() {
     return;
   }
   loading.value = true;
+  loadError.value = '';
   try {
     const res = await listExecutionLogs(queryParams.value);
     logList.value = res.rows;
     total.value = res.total;
   } catch (e) {
-    ElMessage.error('获取执行日志失败');
+    logList.value = [];
+    total.value = 0;
+    loadError.value = handleApiError(e, '获取执行日志失败');
   } finally {
     loading.value = false;
   }
@@ -165,10 +171,11 @@ async function getList() {
 /** 查询项目下拉选项 */
 async function getProjectOptions() {
   try {
-    const res = await listProject({ pageNum: 1, pageSize: 100 }) as any;
+    const res = (await listProject({ pageNum: 1, pageSize: 100 })) as any;
     projectOptions.value = res.rows;
   } catch (e) {
-    ElMessage.error('获取项目列表失败');
+    projectOptions.value = [];
+    handleApiError(e, '获取项目列表失败');
   }
 }
 
@@ -201,8 +208,8 @@ const handleTrigger = async (row: DocPluginExecutionLogVo) => {
     await triggerExecution({ processInstanceId: row.processInstanceId, nodeCode: row.nodeCode });
     ElMessage.success('触发成功');
     getList();
-  } catch {
-    ElMessage.error('触发失败，请重试');
+  } catch (error) {
+    handleApiError(error, '触发失败，请重试');
   }
 };
 
