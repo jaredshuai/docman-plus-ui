@@ -138,11 +138,12 @@ const handleDownload = (row: DocDocumentRecord) => {
 const handlePreview = async (row: DocDocumentRecord) => {
   try {
     const res = await getDocumentViewerUrl(row.id);
-    if (!res?.url) {
+    const viewerUrl = res?.data?.url;
+    if (!viewerUrl) {
       ElMessage.error('在线预览地址获取失败');
       return;
     }
-    window.location.href = res.url;
+    window.location.href = viewerUrl;
   } catch (error) {
     handleApiError(error, '在线预览失败，请重试');
   }
