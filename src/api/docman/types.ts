@@ -55,6 +55,15 @@ export interface DocDocumentQuery extends PageQuery {
   projectId?: number;
 }
 
+export interface DocViewerUrl {
+  url: string;
+  src: string;
+  mode: string;
+  saveUrl?: string | null;
+  saveToken?: string | null;
+  expireAt?: string;
+}
+
 export interface DocProcessConfig {
   id: number;
   projectId: number;

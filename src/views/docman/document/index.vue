@@ -39,8 +39,9 @@
       </el-table-column>
       <el-table-column prop="nasPath" label="存储路径" min-width="250" show-overflow-tooltip />
       <el-table-column prop="generatedAt" label="生成时间" width="180" />
-      <el-table-column label="操作" align="center" width="160" class-name="small-padding fixed-width">
+      <el-table-column label="操作" align="center" width="240" class-name="small-padding fixed-width">
         <template #default="{ row }">
+          <el-button v-hasPermi="['docman:document:query']" size="small" type="success" plain @click="handlePreview(row)">在线预览</el-button>
           <el-button v-hasPermi="['docman:document:download']" size="small" type="primary" plain @click="handleDownload(row)">下载</el-button>
           <el-button v-hasPermi="['docman:document:delete']" size="small" type="danger" plain @click="handleDelete(row)">删除</el-button>
         </template>
@@ -81,8 +82,8 @@
 <script setup lang="ts">
 import { ref, reactive, toRefs, getCurrentInstance, ComponentInternalInstance } from 'vue';
 import { useRoute } from 'vue-router';
-import { listDocument, uploadDocument, downloadDocument, deleteDocument } from '@/api/docman/document';
-import { DocDocumentRecord, DocDocumentQuery, PageResult } from '@/api/docman/types';
+import { listDocument, uploadDocument, downloadDocument, deleteDocument, getDocumentViewerUrl } from '@/api/docman/document';
+import { DocDocumentRecord, DocDocumentQuery } from '@/api/docman/types';
 import { ElMessage, ElMessageBox, UploadInstance, UploadRequestOptions } from 'element-plus';
 import { handleApiError } from '@/utils/error';
 import { useRouteProjectId } from '@/hooks/useRouteProjectId';
@@ -131,6 +132,20 @@ const getList = async () => {
 /** 下载按钮操作 */
 const handleDownload = (row: DocDocumentRecord) => {
   downloadDocument(row.id);
+};
+
+/** 在线预览按钮操作 */
+const handlePreview = async (row: DocDocumentRecord) => {
+  try {
+    const res = await getDocumentViewerUrl(row.id);
+    if (!res?.url) {
+      ElMessage.error('在线预览地址获取失败');
+      return;
+    }
+    window.location.href = res.url;
+  } catch (error) {
+    handleApiError(error, '在线预览失败，请重试');
+  }
 };
 
 /** 删除按钮操作 */
