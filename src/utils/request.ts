@@ -16,6 +16,28 @@ const encryptHeader = 'encrypt-key';
 let downloadLoadingInstance: LoadingInstance;
 // 是否显示重新登录
 export const isRelogin = { show: false };
+
+function redirectToLogin(): Promise<never> {
+  if (!isRelogin.show) {
+    isRelogin.show = true;
+    useUserStore()
+      .logout()
+      .catch(() => undefined)
+      .finally(() => {
+        isRelogin.show = false;
+        if (router.currentRoute.value.path !== '/login') {
+          router.replace({
+            path: '/login',
+            query: {
+              redirect: encodeURIComponent(router.currentRoute.value.fullPath || '/')
+            }
+          });
+        }
+      });
+  }
+  return Promise.reject('无效的会话，或者会话已过期，请重新登录。');
+}
+
 export const globalHeaders = () => {
   return {
     Authorization: 'Bearer ' + getToken(),
@@ -113,28 +135,7 @@ service.interceptors.response.use(
       return res.data;
     }
     if (code === 401) {
-      // prettier-ignore
-      if (!isRelogin.show) {
-        isRelogin.show = true;
-        ElMessageBox.confirm('登录状态已过期，您可以继续留在该页面，或者重新登录', '系统提示', {
-          confirmButtonText: '重新登录',
-          cancelButtonText: '取消',
-          type: 'warning'
-        }).then(() => {
-          isRelogin.show = false;
-          useUserStore().logout().then(() => {
-            router.replace({
-              path: '/login',
-              query: {
-                redirect: encodeURIComponent(router.currentRoute.value.fullPath || '/')
-              }
-            })
-          });
-        }).catch(() => {
-          isRelogin.show = false;
-        });
-      }
-      return Promise.reject('无效的会话，或者会话已过期，请重新登录。');
+      return redirectToLogin();
     } else if (code === HttpStatus.SERVER_ERROR) {
       ElMessage({ message: msg, type: 'error' });
       return Promise.reject(new Error(msg));
@@ -149,6 +150,10 @@ service.interceptors.response.use(
     }
   },
   (error: any) => {
+    const status = error?.response?.status;
+    if (status === HttpStatus.UNAUTHORIZED) {
+      return redirectToLogin();
+    }
     let { message } = error;
     if (message == 'Network Error') {
       message = '后端接口连接异常';

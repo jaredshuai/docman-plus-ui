@@ -59,11 +59,19 @@ export const useUserStore = defineStore('user', () => {
 
   // 注销
   const logout = async (): Promise<void> => {
-    await logoutApi();
-    token.value = '';
-    roles.value = [];
-    permissions.value = [];
-    removeToken();
+    try {
+      await logoutApi();
+    } finally {
+      token.value = '';
+      name.value = '';
+      nickname.value = '';
+      userId.value = '';
+      tenantId.value = '';
+      avatar.value = '';
+      roles.value = [];
+      permissions.value = [];
+      removeToken();
+    }
   };
 
   const setAvatar = (value: string) => {
