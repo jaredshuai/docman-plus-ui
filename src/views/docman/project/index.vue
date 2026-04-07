@@ -29,64 +29,48 @@
       </el-col>
     </el-row>
 
-    <el-row :gutter="16" v-loading="loading" data-testid="project-list">
-      <el-col :xs="24" :sm="12" :md="8" :lg="6" v-for="item in projectList" :key="item.id">
-        <el-card
-          shadow="hover"
-          class="project-card"
-          style="margin-bottom: 16px; cursor: pointer"
-          data-testid="project-card"
-          :data-project-name="item.name"
-          @click="handleDocuments(item.id)"
-        >
-          <template #header>
-            <div style="display: flex; justify-content: space-between; align-items: center">
-              <span style="font-weight: bold">{{ item.name }}</span>
-              <el-tag :type="proxy?.selectDictLabel(doc_project_status.value, item.status)?.cssClass || 'primary'" size="small">
-                {{ proxy?.selectDictLabel(doc_project_status.value, item.status)?.label || item.status }}
-              </el-tag>
-            </div>
-          </template>
-          <p>客户：{{ proxy?.selectDictLabel(doc_customer_type.value, item.customerType)?.label || item.customerType }}</p>
-          <p>类型：{{ proxy?.selectDictLabel(doc_business_type.value, item.businessType)?.label || item.businessType }}</p>
-          <p>负责人：{{ item.ownerName }}</p>
-          <template #footer>
-            <el-button size="small" @click.stop="handleDocuments(item.id)" v-hasPermi="['docman:document:list']">文档中心</el-button>
-            <el-button size="small" type="warning" @click.stop="handleProcess(item.id)" v-hasPermi="['docman:process:query']">流程</el-button>
-            <el-button v-hasPermi="['docman:project:query']" size="small" @click.stop="router.push(`/docman/member/${item.id}`)">成员管理</el-button>
-            <el-button
-              v-hasPermi="['docman:plugin:list']"
-              size="small"
-              type="info"
-              plain
-              @click.stop="router.push(`/docman/plugin/log?projectId=${item.id}`)"
-              >执行日志</el-button
-            >
-            <el-button size="small" type="primary" plain @click.stop="handleUpdate(item)" v-hasPermi="['docman:project:edit']">编辑</el-button>
-            <el-button
-              size="small"
-              type="success"
-              v-if="item.status === 'active'"
-              @click.stop="handleArchive(item.id)"
-              v-hasPermi="['docman:archive:execute']"
-              >归档</el-button
-            >
-            <el-button size="small" type="info" plain @click.stop="handleArchiveDetail(item.id)" v-hasPermi="['docman:archive:query']"
-              >归档详情</el-button
-            >
-            <el-button
-              size="small"
-              type="danger"
-              plain
-              data-testid="project-delete-button"
-              @click.stop="handleDelete(item.id)"
-              v-hasPermi="['docman:project:remove']"
-              >删除</el-button
-            >
-          </template>
-        </el-card>
-      </el-col>
-    </el-row>
+    <el-table v-loading="loading" :data="projectList" border stripe :row-key="(row) => row.id" data-testid="project-table">
+      <el-table-column prop="name" label="项目名称" min-width="180" />
+      <el-table-column label="客户名称" width="150">
+        <template #default="{ row }">
+          {{ proxy?.selectDictLabel(doc_customer_type.value, row.customerType)?.label || row.customerType }}
+        </template>
+      </el-table-column>
+      <el-table-column label="项目类型" width="150">
+        <template #default="{ row }">
+          {{ proxy?.selectDictLabel(doc_business_type.value, row.businessType)?.label || row.businessType }}
+        </template>
+      </el-table-column>
+      <el-table-column prop="ownerName" label="负责人" width="120" />
+      <el-table-column label="操作" align="center" width="240" class-name="small-padding fixed-width">
+        <template #default="{ row }">
+          <el-button v-hasPermi="['docman:project:edit']" size="small" type="primary" plain @click="handleUpdate(row)">编辑</el-button>
+          <el-button size="small" @click="handleDocuments(row.id)" v-hasPermi="['docman:document:list']">文档中心</el-button>
+          <el-button
+            size="small"
+            type="success"
+            v-if="row.status === 'active'"
+            @click="handleArchive(row.id)"
+            v-hasPermi="['docman:archive:execute']"
+            >归档</el-button
+          >
+          <el-dropdown @command="(command: string) => handleCommand(command, row)">
+            <el-button size="small" type="info" plain>
+              更多<i class="el-icon-arrow-down el-icon--right"></i>
+            </el-button>
+            <template #dropdown>
+              <el-dropdown-menu>
+                <el-dropdown-item command="process" v-hasPermi="['docman:process:query']">流程</el-dropdown-item>
+                <el-dropdown-item command="member" v-hasPermi="['docman:project:query']">成员管理</el-dropdown-item>
+                <el-dropdown-item command="log" v-hasPermi="['docman:plugin:list']">执行日志</el-dropdown-item>
+                <el-dropdown-item command="archive" v-hasPermi="['docman:archive:query']">归档详情</el-dropdown-item>
+                <el-dropdown-item command="delete" v-hasPermi="['docman:project:remove']" divided>删除</el-dropdown-item>
+              </el-dropdown-menu>
+            </template>
+          </el-dropdown>
+        </template>
+      </el-table-column>
+    </el-table>
 
     <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize" @pagination="getList" />
 
@@ -294,14 +278,37 @@ function handleDelete(id: number) {
 function handleDocuments(id: number) {
   router.push({ path: '/docman/document', query: { projectId: String(id) } });
 }
+
 function handleProcess(id: number) {
   router.push({ path: '/docman/process', query: { projectId: String(id) } });
 }
+
 function handleMembers(id: number) {
   router.push({ path: '/docman/member', query: { projectId: String(id) } });
 }
+
 function handleArchiveDetail(id: number) {
   router.push({ path: '/docman/archive', query: { projectId: String(id) } });
+}
+
+function handleCommand(command: string, row: DocProject) {
+  switch (command) {
+    case 'process':
+      handleProcess(row.id);
+      break;
+    case 'member':
+      router.push(`/docman/member/${row.id}`);
+      break;
+    case 'log':
+      router.push(`/docman/plugin/log?projectId=${row.id}`);
+      break;
+    case 'archive':
+      handleArchiveDetail(row.id);
+      break;
+    case 'delete':
+      handleDelete(row.id);
+      break;
+  }
 }
 
 /** 归档按钮操作 */
