@@ -42,28 +42,21 @@
         </template>
       </el-table-column>
       <el-table-column prop="ownerName" label="负责人" width="120" />
-      <el-table-column label="操作" align="center" width="240" class-name="small-padding fixed-width">
+      <el-table-column label="操作" align="center" width="180" class-name="small-padding fixed-width">
         <template #default="{ row }">
           <el-button v-hasPermi="['docman:project:edit']" size="small" type="primary" plain @click="handleUpdate(row)">编辑</el-button>
           <el-button size="small" @click="handleDocuments(row.id)" v-hasPermi="['docman:document:list']">文档中心</el-button>
-          <el-button
-            size="small"
-            type="success"
-            v-if="row.status === 'active'"
-            @click="handleArchive(row.id)"
-            v-hasPermi="['docman:archive:execute']"
-            >归档</el-button
-          >
           <el-dropdown @command="(command: string) => handleCommand(command, row)">
             <el-button size="small" type="info" plain>
               更多<i class="el-icon-arrow-down el-icon--right"></i>
             </el-button>
             <template #dropdown>
               <el-dropdown-menu>
+                <el-dropdown-item command="archive" v-if="row.status === 'active'" v-hasPermi="['docman:archive:execute']">归档</el-dropdown-item>
                 <el-dropdown-item command="process" v-hasPermi="['docman:process:query']">流程</el-dropdown-item>
                 <el-dropdown-item command="member" v-hasPermi="['docman:project:query']">成员管理</el-dropdown-item>
                 <el-dropdown-item command="log" v-hasPermi="['docman:plugin:list']">执行日志</el-dropdown-item>
-                <el-dropdown-item command="archive" v-hasPermi="['docman:archive:query']">归档详情</el-dropdown-item>
+                <el-dropdown-item command="archiveDetail" v-hasPermi="['docman:archive:query']">归档详情</el-dropdown-item>
                 <el-dropdown-item command="delete" v-hasPermi="['docman:project:remove']" divided>删除</el-dropdown-item>
               </el-dropdown-menu>
             </template>
@@ -303,6 +296,9 @@ function handleCommand(command: string, row: DocProject) {
       router.push(`/docman/plugin/log?projectId=${row.id}`);
       break;
     case 'archive':
+      handleArchive(row.id);
+      break;
+    case 'archiveDetail':
       handleArchiveDetail(row.id);
       break;
     case 'delete':
