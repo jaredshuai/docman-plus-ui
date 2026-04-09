@@ -1,5 +1,7 @@
 import { defineConfig, devices } from '@playwright/test';
 
+const DOCMAN_E2E_BASE_URL = process.env.DOCMAN_E2E_BASE_URL || 'http://localhost';
+
 /**
  * Read environment variables from file.
  * https://github.com/motdotla/dotenv
@@ -20,14 +22,11 @@ export default defineConfig({
   /* Opt out of parallel tests on CI. */
   workers: process.env.CI ? 1 : undefined,
   /* Reporter to use. See https://playwright.dev/docs/test-reporters */
-  reporter: [
-    ['html', { outputFolder: 'e2e-report' }],
-    ['list']
-  ],
+  reporter: [['html', { outputFolder: 'e2e-report' }], ['list']],
   /* Shared settings for all the projects below. See https://playwright.dev/docs/api/class-testoptions. */
   use: {
     /* Base URL to use in actions like `await page.goto('/')`. */
-    baseURL: 'http://localhost:18080',
+    baseURL: DOCMAN_E2E_BASE_URL,
 
     /* Collect trace when retrying the failed test. See https://playwright.dev/docs/trace-viewer */
     trace: 'on-first-retry',
@@ -39,21 +38,21 @@ export default defineConfig({
     video: 'retain-on-failure',
 
     /* Default timeout for each action */
-    actionTimeout: 10000,
+    actionTimeout: 10000
   },
 
   /* Configure projects for major browsers */
   projects: [
     {
       name: 'chromium',
-      use: { ...devices['Desktop Chrome'] },
-    },
+      use: { ...devices['Desktop Chrome'] }
+    }
   ],
 
   /* Run local dev server before starting the tests */
   // webServer: {
   //   command: 'npm run start',
-  //   url: 'http://localhost:18080',
+  //   url: DOCMAN_E2E_BASE_URL,
   //   reuseExistingServer: !process.env.CI,
   // },
 
@@ -63,5 +62,5 @@ export default defineConfig({
   },
 
   /* Global test timeout */
-  timeout: 60000,
+  timeout: 60000
 });

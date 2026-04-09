@@ -1,8 +1,8 @@
 import request from '@/utils/request';
-import { DocDocumentRecord, DocDocumentQuery, DocViewerUrl } from './types';
+import { DocDocumentRecord, DocDocumentQuery, DocViewerUrl, PageResult } from './types';
 import download from '@/plugins/download';
 
-export function listDocument(projectId: number, query: DocDocumentQuery): Promise<any> {
+export function listDocument(projectId: string | number, query: DocDocumentQuery): Promise<PageResult<DocDocumentRecord>> {
   return request({ url: '/docman/document/list', method: 'get', params: { projectId, ...query } });
 }
 

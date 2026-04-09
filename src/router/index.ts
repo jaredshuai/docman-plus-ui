@@ -105,7 +105,39 @@ export const dynamicRoutes: RouteRecordRaw[] = [
         path: 'dashboard',
         component: () => import('@/views/docman/dashboard/index.vue'),
         name: 'DocDashboard',
-        meta: { title: '仪表盘', noCache: true, activeMenu: '/docman/project', permissions: ['docman:project:list'] }
+        meta: { title: '领导概览', noCache: true, activeMenu: '/docman/project', permissions: ['docman:project:list'] }
+      },
+      {
+        path: 'workspace',
+        component: () => import('@/views/docman/workspace/index.vue'),
+        name: 'DocWorkspace',
+        meta: { title: '项目工作台', noCache: true, activeMenu: '/docman/project', permissions: ['docman:project:query'] }
+      },
+      {
+        path: 'balance',
+        component: () => import('@/views/docman/balance/index.vue'),
+        name: 'DocBalance',
+        meta: { title: '项目经理平料', noCache: true, activeMenu: '/docman/project', permissions: ['docman:project:query'] }
+      },
+      {
+        path: 'project-type',
+        component: () => import('@/views/docman/projectType/index.vue'),
+        name: 'DocProjectType',
+        roles: ['superadmin'],
+        meta: { title: '项目类型', noCache: true, activeMenu: '/docman/project', permissions: ['docman:project:list'] }
+      },
+      {
+        path: 'workflow-template',
+        component: () => import('@/views/docman/workflowTemplate/index.vue'),
+        name: 'DocWorkflowTemplate',
+        meta: { title: '流程模板', noCache: true, activeMenu: '/docman/project', permissions: ['docman:process:query'] }
+      },
+      {
+        path: 'governance',
+        component: () => import('@/views/docman/governance/index.vue'),
+        name: 'DocGovernance',
+        roles: ['superadmin'],
+        meta: { title: '系统治理', noCache: true, activeMenu: '/docman/project' }
       },
       {
         path: 'member/:projectId',
@@ -124,6 +156,13 @@ export const dynamicRoutes: RouteRecordRaw[] = [
         component: () => import('@/views/docman/nodedeadline/index.vue'),
         name: 'DocNodeDeadline',
         meta: { title: '节点时限管理', noCache: true, activeMenu: '/docman/project', permissions: ['docman:nodedeadline:query'] }
+      },
+      {
+        path: 'admin',
+        component: () => import('@/views/docman/admin/index.vue'),
+        name: 'DocAdmin',
+        roles: ['superadmin'],
+        meta: { title: '管理员管理', noCache: true, activeMenu: '/docman/project' }
       }
     ]
   }

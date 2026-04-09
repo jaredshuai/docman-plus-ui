@@ -1,6 +1,14 @@
 import { test, expect } from '@playwright/test';
 import { DEMO_PROJECT_ID, DOCMAN_URLS, login } from '../helpers/auth';
 
+async function ensureDashboardReady(page: import('@playwright/test').Page): Promise<void> {
+  const loadError = page.getByText('仪表盘数据加载失败', { exact: true });
+  if (await loadError.count()) {
+    await page.reload();
+  }
+  await expect(loadError).toHaveCount(0);
+}
+
 /**
  * P0 冒烟测试 - 登录
  */
@@ -27,13 +35,16 @@ test.describe('P0 docman 页面测试', () => {
     await page.goto(DOCMAN_URLS.dashboard);
 
     const dashboard = page.locator('.app-container').first();
+    const statCards = page.getByTestId('stat-cards-row');
     await expect(dashboard).toBeVisible({ timeout: 20000 });
+    await ensureDashboardReady(page);
 
-    await expect(page.getByText('项目总数', { exact: true })).toBeVisible({ timeout: 10000 });
-    await expect(page.getByText('文档总数', { exact: true })).toBeVisible();
-    await expect(page.locator('.stat-label', { hasText: /^超期节点$/ })).toBeVisible();
-    await expect(page.getByText('插件失败', { exact: false })).toBeVisible();
-    await expect(page.getByText('本地演示项目', { exact: true }).first()).toBeVisible();
+    await expect(page.getByText('领导概览为只读轻量视图', { exact: false })).toBeVisible({ timeout: 10000 });
+    await expect(statCards.getByText('项目总览', { exact: true })).toBeVisible();
+    await expect(statCards.getByText('文档完善度', { exact: true })).toBeVisible();
+    await expect(statCards.getByText('平均项目进度', { exact: true })).toBeVisible();
+    await expect(statCards.getByText('风险提醒', { exact: true })).toBeVisible();
+    await expect(page.getByText('仪表盘数据加载失败', { exact: true })).toHaveCount(0);
   });
 
   test('仪表盘区域内容可见', async ({ page }) => {
@@ -41,11 +52,13 @@ test.describe('P0 docman 页面测试', () => {
 
     const dashboard = page.locator('.app-container').first();
     await expect(dashboard).toBeVisible({ timeout: 20000 });
+    await ensureDashboardReady(page);
 
-    await expect(page.getByText('项目进度', { exact: true })).toBeVisible({ timeout: 10000 });
+    await expect(page.getByText('项目级概览', { exact: true })).toBeVisible({ timeout: 10000 });
+    await expect(page.getByText('重点关注项目', { exact: true })).toBeVisible();
     await expect(page.getByText('即将超期节点', { exact: true })).toBeVisible();
-    await expect(page.getByText('插件执行统计', { exact: true })).toBeVisible();
-    await expect(page.getByText('AI生成插件', { exact: true })).toBeVisible();
+    await expect(page.getByText('文档完善度分布', { exact: true })).toBeVisible();
+    await expect(page.getByText(/当前没有重点关注项目|高关注|需关注/).first()).toBeVisible();
   });
 
   test('项目管理页面可打开', async ({ page }) => {
@@ -57,7 +70,17 @@ test.describe('P0 docman 页面测试', () => {
     const searchForm = page.locator('.el-form').first();
     await expect(searchForm).toBeVisible({ timeout: 10000 });
     await expect(page.getByRole('button', { name: '新增项目' })).toBeVisible();
+    await expect(page.getByRole('button', { name: '领导概览' })).toBeVisible();
     await expect(page.locator('.project-card').first()).toBeVisible({ timeout: 10000 });
+  });
+
+  test('项目页可进入领导概览', async ({ page }) => {
+    await page.goto(DOCMAN_URLS.project);
+
+    await expect(page.locator('[data-testid="project-page"], .app-container').first()).toBeVisible({ timeout: 20000 });
+    await page.getByRole('button', { name: '领导概览' }).click();
+    await expect(page).toHaveURL(/\/docman\/dashboard/);
+    await expect(page.getByText('项目级概览', { exact: true })).toBeVisible({ timeout: 10000 });
   });
 
   test('文档中心页面可打开', async ({ page }) => {

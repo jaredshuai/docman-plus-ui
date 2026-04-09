@@ -7,7 +7,7 @@ import download from '@/plugins/download';
  * 归档项目
  * @param projectId 项目ID
  */
-export function archiveProject(projectId: number): AxiosPromise<void> {
+export function archiveProject(projectId: string | number): AxiosPromise<void> {
   return request({
     url: `/docman/archive/${projectId}`,
     method: 'post'
@@ -18,7 +18,7 @@ export function archiveProject(projectId: number): AxiosPromise<void> {
  * 获取归档详情
  * @param projectId 项目ID
  */
-export function getArchive(projectId: number): AxiosPromise<DocArchivePackage> {
+export function getArchive(projectId: string | number): AxiosPromise<DocArchivePackage> {
   return request({
     url: '/docman/archive/' + projectId,
     method: 'get'
@@ -29,7 +29,7 @@ export function getArchive(projectId: number): AxiosPromise<DocArchivePackage> {
  * 获取归档历史列表
  * @param projectId 项目ID
  */
-export function listArchive(projectId: number): AxiosPromise<DocArchivePackage[]> {
+export function listArchive(projectId: string | number): AxiosPromise<DocArchivePackage[]> {
   return request({
     url: `/docman/archive/history/${projectId}`,
     method: 'get'

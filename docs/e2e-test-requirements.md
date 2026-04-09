@@ -52,8 +52,9 @@ E2E 默认运行在本机 Docker 联调环境。
 
 要求如下：
 
-- 前端入口：`http://localhost:18080`
-- 后端网关入口：`http://localhost:18080/prod-api`
+- 默认前端入口：`http://localhost`
+- 默认后端网关入口：`http://localhost/prod-api`
+- 如联调环境不在默认地址，E2E 通过 `DOCMAN_E2E_BASE_URL` 覆盖
 - 后端直连：`http://localhost:18081`
 - 当前部署目录：`D:/codespace/docman-ruoyi/script/docker/docman-local`
 
@@ -125,22 +126,23 @@ E2E 默认运行在本机 Docker 联调环境。
 2. 使用 `admin / admin123` 登录成功
 3. 首页加载成功
 4. `文档管理` 一级菜单可见
-5. `仪表盘` 页面打开成功
+5. `领导概览` 页面打开成功
 6. `项目管理` 页面打开成功
 7. `文档中心` 页面打开成功
 8. `流程编排` 页面打开成功
 9. `归档管理` 页面打开成功
 10. `插件列表` 页面打开成功
 
-### 7.2 仪表盘
+### 7.2 仪表盘 / 领导概览
 
 要求验证：
 
 - 页面无白屏
-- 四个统计卡片正常渲染
-- 项目进度表正常渲染
+- 四个摘要卡片正常渲染
+- 项目级概览表正常渲染
+- 重点关注项目区域正常渲染
 - 即将超期节点表正常渲染
-- 插件执行统计表正常渲染
+- 文档完善度分布表正常渲染
 - 页面接口返回业务成功，不允许仅依赖 HTTP 200
 
 至少校验接口：
@@ -148,7 +150,6 @@ E2E 默认运行在本机 Docker 联调环境。
 - `/docman/dashboard/overview`
 - `/docman/dashboard/project-progress`
 - `/docman/dashboard/deadline-alert`
-- `/docman/dashboard/plugin-stats`
 
 ### 7.3 项目管理
 

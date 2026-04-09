@@ -15,6 +15,11 @@
           <el-option v-for="dict in doc_business_type" :key="dict.value" :label="dict.label" :value="dict.value" />
         </el-select>
       </el-form-item>
+      <el-form-item label="项目类型" prop="projectTypeCode">
+        <el-select v-model="queryParams.projectTypeCode" placeholder="全部" clearable>
+          <el-option v-for="item in projectTypeList" :key="item.code" :label="item.name" :value="item.code" />
+        </el-select>
+      </el-form-item>
       <el-form-item>
         <el-button type="primary" icon="Search" data-testid="project-search-submit" @click="handleQuery">搜索</el-button>
         <el-button icon="Refresh" @click="resetQuery">重置</el-button>
@@ -26,6 +31,25 @@
         <el-button type="primary" plain icon="Plus" data-testid="project-add-button" @click="handleAdd" v-hasPermi="['docman:project:add']"
           >新增项目</el-button
         >
+      </el-col>
+      <el-col :span="1.5">
+        <el-button type="success" plain icon="DataAnalysis" @click="router.push('/docman/dashboard')" v-hasPermi="['docman:project:list']"
+          >领导概览</el-button
+        >
+      </el-col>
+      <el-col :span="1.5" v-if="isSuperAdmin">
+        <el-button type="warning" plain icon="Setting" @click="router.push('/docman/project-type')">项目类型</el-button>
+      </el-col>
+      <el-col :span="1.5">
+        <el-button type="info" plain icon="SetUp" @click="router.push('/docman/workflow-template')" v-hasPermi="['docman:process:query']"
+          >流程模板</el-button
+        >
+      </el-col>
+      <el-col :span="1.5" v-if="isSuperAdmin">
+        <el-button type="primary" plain icon="Operation" @click="router.push('/docman/governance')">系统治理</el-button>
+      </el-col>
+      <el-col :span="1.5" v-if="isSuperAdmin">
+        <el-button type="danger" plain icon="User" @click="router.push('/docman/admin')">管理员管理</el-button>
       </el-col>
     </el-row>
 
@@ -49,8 +73,13 @@
           </template>
           <p>客户：{{ proxy?.selectDictLabel(doc_customer_type.value, item.customerType)?.label || item.customerType }}</p>
           <p>类型：{{ proxy?.selectDictLabel(doc_business_type.value, item.businessType)?.label || item.businessType }}</p>
+          <p>项目类型：{{ item.projectTypeCode || '-' }}</p>
           <p>负责人：{{ item.ownerName }}</p>
           <template #footer>
+            <el-button size="small" type="primary" @click.stop="handleWorkspace(item.id)" v-hasPermi="['docman:project:query']">工作台</el-button>
+            <el-button size="small" type="success" plain @click.stop="handleBalance(item.id)" v-hasPermi="['docman:project:query']"
+              >项目经理</el-button
+            >
             <el-button size="small" @click.stop="handleDocuments(item.id)" v-hasPermi="['docman:document:list']">文档中心</el-button>
             <el-button size="small" type="warning" @click.stop="handleProcess(item.id)" v-hasPermi="['docman:process:query']">流程</el-button>
             <el-button v-hasPermi="['docman:project:query']" size="small" @click.stop="router.push(`/docman/member/${item.id}`)">成员管理</el-button>
@@ -106,6 +135,11 @@
             <el-option v-for="dict in doc_business_type" :key="dict.value" :label="dict.label" :value="dict.value" />
           </el-select>
         </el-form-item>
+        <el-form-item label="项目类型" prop="projectTypeCode">
+          <el-select v-model="form.projectTypeCode" placeholder="请选择项目类型" style="width: 100%">
+            <el-option v-for="item in projectTypeList" :key="item.code" :label="item.name" :value="item.code" />
+          </el-select>
+        </el-form-item>
         <el-form-item label="文档分类" prop="documentCategory">
           <el-input v-model="form.documentCategory" placeholder="请输入文档分类" data-testid="project-form-document-category" />
         </el-form-item>
@@ -130,10 +164,11 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, reactive, toRefs, getCurrentInstance, ComponentInternalInstance } from 'vue';
+import { computed, ref, onMounted, reactive, toRefs, getCurrentInstance, ComponentInternalInstance } from 'vue';
 import { useRouter } from 'vue-router';
 import { listProject, addProject, updateProject, delProject } from '@/api/docman/project';
 import { archiveProject } from '@/api/docman/archive';
+import { listProjectType } from '@/api/docman/projectType';
 import { DocProject, DocProjectQuery, DocProjectForm, PageResult } from '@/api/docman/types';
 import { ElMessage } from 'element-plus';
 import { useUserStore } from '@/store/modules/user';
@@ -142,6 +177,7 @@ import { handleApiError } from '@/utils/error';
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 const router = useRouter();
 const userStore = useUserStore();
+const isSuperAdmin = computed(() => userStore.roles.includes('superadmin'));
 
 const { doc_customer_type, doc_business_type, doc_project_status } = toRefs<any>(
   proxy?.useDict('doc_customer_type', 'doc_business_type', 'doc_project_status')
@@ -151,6 +187,7 @@ const projectList = ref<DocProject[]>([]);
 const total = ref(0);
 const loading = ref(true);
 const loadError = ref('');
+const projectTypeList = ref<Array<{ code: string; name: string }>>([]);
 
 const queryRef = ref<ElFormInstance>();
 const projectFormRef = ref<ElFormInstance>();
@@ -163,6 +200,7 @@ const dialog = reactive<DialogOption>({
 const initFormData: DocProjectForm = {
   id: undefined,
   name: '',
+  projectTypeCode: 'telecom',
   customerType: 'telecom',
   businessType: 'pipeline',
   documentCategory: '',
@@ -175,6 +213,7 @@ const data = reactive({
     pageNum: 1,
     pageSize: 12,
     name: '',
+    projectTypeCode: '',
     customerType: '',
     businessType: ''
   } as DocProjectQuery,
@@ -237,6 +276,7 @@ function handleUpdate(row: DocProject) {
   Object.assign(form.value, {
     id: row.id,
     name: row.name,
+    projectTypeCode: row.projectTypeCode,
     customerType: row.customerType,
     businessType: row.businessType,
     documentCategory: row.documentCategory,
@@ -294,6 +334,12 @@ function handleDelete(id: number) {
 function handleDocuments(id: number) {
   router.push({ path: '/docman/document', query: { projectId: String(id) } });
 }
+function handleWorkspace(id: number) {
+  router.push({ path: '/docman/workspace', query: { projectId: String(id) } });
+}
+function handleBalance(id: number) {
+  router.push({ path: '/docman/balance', query: { projectId: String(id) } });
+}
 function handleProcess(id: number) {
   router.push({ path: '/docman/process', query: { projectId: String(id) } });
 }
@@ -320,5 +366,13 @@ function handleArchive(id: number) {
     .catch(() => {});
 }
 
-onMounted(() => getList());
+onMounted(async () => {
+  getList();
+  try {
+    const res = await listProjectType();
+    projectTypeList.value = res.data || [];
+  } catch {
+    projectTypeList.value = [];
+  }
+});
 </script>

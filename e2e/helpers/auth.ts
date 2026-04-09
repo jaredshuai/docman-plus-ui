@@ -5,7 +5,7 @@
 
 import { Page, BrowserContext } from '@playwright/test';
 
-const APP_BASE_URL = process.env.DOCMAN_E2E_BASE_URL?.replace(/\/$/, '') ?? '';
+const APP_BASE_URL = process.env.DOCMAN_E2E_BASE_URL?.replace(/\/$/, '') || 'http://localhost';
 
 function resolveAppUrl(path: string): string {
   return APP_BASE_URL ? `${APP_BASE_URL}${path}` : path;
@@ -46,7 +46,7 @@ export const DOCMAN_URLS = {
   nodeDeadline: resolveAppUrl('/docman/nodedeadline')
 };
 
-export const DEMO_PROJECT_ID = 910000000000000001;
+export const DEMO_PROJECT_ID = 9100001;
 
 /**
  * 执行登录操作
@@ -54,33 +54,22 @@ export const DEMO_PROJECT_ID = 910000000000000001;
  * @param username 用户名
  * @param password 密码
  */
-export async function login(
-  page: Page,
-  username: string = TEST_ACCOUNT.username,
-  password: string = TEST_ACCOUNT.password
-): Promise<void> {
-  await page.goto(LOGIN_URL);
+export async function login(page: Page, username: string = TEST_ACCOUNT.username, password: string = TEST_ACCOUNT.password): Promise<void> {
+  try {
+    await page.goto(LOGIN_URL);
+  } catch (error) {
+    throw new Error(`无法访问登录页 ${LOGIN_URL}。请确认本地联调环境已启动，或通过 DOCMAN_E2E_BASE_URL 指向可用前端入口。原始错误: ${String(error)}`);
+  }
 
-  const loginFormCandidates = [
-    '[data-testid="login-form"]',
-    '.login-form'
-  ];
+  const loginFormCandidates = ['[data-testid="login-form"]', '.login-form'];
   const usernameCandidates = [
     '[data-testid="username-input"] input',
     '[data-testid="username-input"]',
     'input[placeholder*="用户名"]',
     'input[placeholder*="账号"]'
   ];
-  const passwordCandidates = [
-    '[data-testid="password-input"] input',
-    '[data-testid="password-input"]',
-    'input[type="password"]'
-  ];
-  const loginButtonCandidates = [
-    '[data-testid="login-button"]',
-    'button:has-text("登")',
-    'button[type="primary"]'
-  ];
+  const passwordCandidates = ['[data-testid="password-input"] input', '[data-testid="password-input"]', 'input[type="password"]'];
+  const loginButtonCandidates = ['[data-testid="login-button"]', 'button:has-text("登")', 'button[type="primary"]'];
 
   await waitForAnyVisible(page, loginFormCandidates, 15000);
   await page.waitForLoadState('networkidle', { timeout: 10000 }).catch(() => undefined);
@@ -145,7 +134,7 @@ async function waitForAnyVisible(page: Page, selectors: string[], timeout: numbe
   while (Date.now() < deadline) {
     for (const selector of selectors) {
       const locator = page.locator(selector).first();
-      if (await locator.count() > 0 && await locator.isVisible()) {
+      if ((await locator.count()) > 0 && (await locator.isVisible())) {
         return;
       }
     }
@@ -156,21 +145,24 @@ async function waitForAnyVisible(page: Page, selectors: string[], timeout: numbe
 
 async function assertCaptchaIsReady(page: Page): Promise<void> {
   const captchaInput = page.locator('input[placeholder*="验证码"]').first();
-  if (await captchaInput.count() === 0) {
+  if ((await captchaInput.count()) === 0) {
     return;
   }
 
   try {
-    await page.waitForFunction(() => {
-      const input = Array.from(document.querySelectorAll('input')).find((item) =>
-        (item as HTMLInputElement).placeholder?.includes('验证码')
-      ) as HTMLInputElement | undefined;
-      if (!input) {
-        return true;
-      }
-      const style = window.getComputedStyle(input);
-      return style.display === 'none' || style.visibility === 'hidden' || input.offsetParent === null;
-    }, { timeout: 5000 });
+    await page.waitForFunction(
+      () => {
+        const input = Array.from(document.querySelectorAll('input')).find((item) => (item as HTMLInputElement).placeholder?.includes('验证码')) as
+          | HTMLInputElement
+          | undefined;
+        if (!input) {
+          return true;
+        }
+        const style = window.getComputedStyle(input);
+        return style.display === 'none' || style.visibility === 'hidden' || input.offsetParent === null;
+      },
+      { timeout: 5000 }
+    );
   } catch {
     throw new Error('登录页验证码仍然可见，请确认测试环境已关闭验证码或为测试补充验证码处理逻辑');
   }

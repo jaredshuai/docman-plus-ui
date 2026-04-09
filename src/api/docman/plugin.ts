@@ -13,7 +13,7 @@ export function listPlugins(): AxiosPromise<DocPluginInfo[]> {
 }
 
 export interface DocPluginExecutionLogQuery {
-  projectId: number;
+  projectId: string | number;
   processInstanceId?: number;
   nodeCode?: string;
   pluginId?: string;

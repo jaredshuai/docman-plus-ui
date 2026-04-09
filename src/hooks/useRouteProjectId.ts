@@ -1,14 +1,14 @@
 import type { RouteLocationNormalizedLoaded } from 'vue-router';
 
-const normalizeProjectId = (value: unknown): number | undefined => {
+const normalizeProjectId = (value: unknown): string | undefined => {
   const rawValue = Array.isArray(value) ? value[0] : value;
-  const numericValue = Number(rawValue);
-  return Number.isFinite(numericValue) && numericValue > 0 ? numericValue : undefined;
+  const stringValue = String(rawValue ?? '').trim();
+  return /^\d+$/.test(stringValue) && stringValue !== '0' ? stringValue : undefined;
 };
 
 export function useRouteProjectId(route: RouteLocationNormalizedLoaded) {
-  const projectId = ref<number | undefined>();
-  const hasProjectId = computed(() => typeof projectId.value === 'number' && projectId.value > 0);
+  const projectId = ref<string | undefined>();
+  const hasProjectId = computed(() => Boolean(projectId.value));
 
   watch(
     () => route.query.projectId,
