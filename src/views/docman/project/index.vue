@@ -53,110 +53,154 @@
       </el-col>
     </el-row>
 
-    <el-row :gutter="16" v-loading="loading" data-testid="project-list">
-      <el-col :xs="24" :sm="12" :md="8" :lg="6" v-for="item in projectList" :key="item.id">
-        <el-card
-          shadow="hover"
-          class="project-card"
-          style="margin-bottom: 16px; cursor: pointer"
-          data-testid="project-card"
-          :data-project-name="item.name"
-          @click="handleDocuments(item.id)"
-        >
-          <template #header>
-            <div style="display: flex; justify-content: space-between; align-items: center">
-              <span style="font-weight: bold">{{ item.name }}</span>
-              <el-tag :type="proxy?.selectDictLabel(doc_project_status.value, item.status)?.cssClass || 'primary'" size="small">
-                {{ proxy?.selectDictLabel(doc_project_status.value, item.status)?.label || item.status }}
-              </el-tag>
-            </div>
-          </template>
-          <p>客户：{{ proxy?.selectDictLabel(doc_customer_type.value, item.customerType)?.label || item.customerType }}</p>
-          <p>类型：{{ proxy?.selectDictLabel(doc_business_type.value, item.businessType)?.label || item.businessType }}</p>
-          <p>项目类型：{{ item.projectTypeCode || '-' }}</p>
-          <p>负责人：{{ item.ownerName }}</p>
-          <template #footer>
-            <el-button size="small" type="primary" @click.stop="handleWorkspace(item.id)" v-hasPermi="['docman:project:query']">工作台</el-button>
-            <el-button size="small" type="success" plain @click.stop="handleBalance(item.id)" v-hasPermi="['docman:project:query']"
-              >项目经理</el-button
-            >
-            <el-button size="small" @click.stop="handleDocuments(item.id)" v-hasPermi="['docman:document:list']">文档中心</el-button>
-            <el-button size="small" type="warning" @click.stop="handleProcess(item.id)" v-hasPermi="['docman:process:query']">流程</el-button>
-            <el-button v-hasPermi="['docman:project:query']" size="small" @click.stop="router.push(`/docman/member/${item.id}`)">成员管理</el-button>
-            <el-button
-              v-hasPermi="['docman:plugin:list']"
-              size="small"
-              type="info"
-              plain
-              @click.stop="router.push(`/docman/plugin/log?projectId=${item.id}`)"
-              >执行日志</el-button
-            >
-            <el-button size="small" type="primary" plain @click.stop="handleUpdate(item)" v-hasPermi="['docman:project:edit']">编辑</el-button>
-            <el-button
-              size="small"
-              type="success"
-              v-if="item.status === 'active'"
-              @click.stop="handleArchive(item.id)"
-              v-hasPermi="['docman:archive:execute']"
-              >归档</el-button
-            >
-            <el-button size="small" type="info" plain @click.stop="handleArchiveDetail(item.id)" v-hasPermi="['docman:archive:query']"
-              >归档详情</el-button
-            >
-            <el-button
-              size="small"
-              type="danger"
-              plain
-              data-testid="project-delete-button"
-              @click.stop="handleDelete(item.id)"
-              v-hasPermi="['docman:project:remove']"
-              >删除</el-button
-            >
-          </template>
-        </el-card>
-      </el-col>
-    </el-row>
+    <el-table v-loading="loading" :data="projectList" border stripe :row-key="(row) => row.id" data-testid="project-table">
+      <el-table-column prop="name" label="项目名称" min-width="180" />
+      <el-table-column label="客户类型" width="130">
+        <template #default="{ row }">
+          {{ proxy?.selectDictLabel(doc_customer_type.value, row.customerType)?.label || row.customerType }}
+        </template>
+      </el-table-column>
+      <el-table-column label="业务类型" width="130">
+        <template #default="{ row }">
+          {{ proxy?.selectDictLabel(doc_business_type.value, row.businessType)?.label || row.businessType }}
+        </template>
+      </el-table-column>
+      <el-table-column label="项目类型" width="140">
+        <template #default="{ row }">
+          {{ resolveProjectTypeName(row.projectTypeCode) }}
+        </template>
+      </el-table-column>
+      <el-table-column prop="ownerName" label="负责人" width="120" />
+      <el-table-column label="操作" align="center" width="320" class-name="small-padding fixed-width">
+        <template #default="{ row }">
+          <el-button v-hasPermi="['docman:project:edit']" size="small" type="primary" plain @click="handleUpdate(row)">编辑</el-button>
+          <el-button v-hasPermi="['docman:project:query']" size="small" type="info" plain @click="handleDetail(row)">详情</el-button>
+          <el-button size="small" @click="handleDocuments(row.id)" v-hasPermi="['docman:document:list']">文档中心</el-button>
+          <el-dropdown @command="(command: string) => handleCommand(command, row)">
+            <el-button size="small" type="info" plain> 更多<i class="el-icon-arrow-down el-icon--right"></i> </el-button>
+            <template #dropdown>
+              <el-dropdown-menu>
+                <el-dropdown-item command="workspace" v-hasPermi="['docman:project:query']">项目工作台</el-dropdown-item>
+                <el-dropdown-item command="balance" v-hasPermi="['docman:project:query']">项目经理平料</el-dropdown-item>
+                <el-dropdown-item command="visa">签证单</el-dropdown-item>
+                <el-dropdown-item command="archive" v-if="row.status === 'active'" v-hasPermi="['docman:archive:execute']">归档</el-dropdown-item>
+                <el-dropdown-item command="process" v-hasPermi="['docman:process:query']">流程</el-dropdown-item>
+                <el-dropdown-item command="member" v-hasPermi="['docman:project:query']">成员管理</el-dropdown-item>
+                <el-dropdown-item command="log" v-hasPermi="['docman:plugin:list']">执行日志</el-dropdown-item>
+                <el-dropdown-item command="archiveDetail" v-hasPermi="['docman:archive:query']">归档详情</el-dropdown-item>
+                <el-dropdown-item command="delete" v-hasPermi="['docman:project:remove']" divided>删除</el-dropdown-item>
+              </el-dropdown-menu>
+            </template>
+          </el-dropdown>
+        </template>
+      </el-table-column>
+    </el-table>
 
     <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize" @pagination="getList" />
 
-    <!-- 添加或修改项目配置对话框 -->
-    <el-dialog v-model="dialog.visible" :title="dialog.title" width="500px" append-to-body data-testid="project-dialog">
-      <el-form ref="projectFormRef" :model="form" :rules="rules" label-width="100px" data-testid="project-form">
-        <el-form-item label="项目名称" prop="name">
-          <el-input v-model="form.name" placeholder="请输入项目名称" data-testid="project-form-name" />
-        </el-form-item>
-        <el-form-item label="客户类型" prop="customerType">
-          <el-select v-model="form.customerType" placeholder="请选择客户类型" style="width: 100%">
-            <el-option v-for="dict in doc_customer_type" :key="dict.value" :label="dict.label" :value="dict.value" />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="业务类型" prop="businessType">
-          <el-select v-model="form.businessType" placeholder="请选择业务类型" style="width: 100%">
-            <el-option v-for="dict in doc_business_type" :key="dict.value" :label="dict.label" :value="dict.value" />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="项目类型" prop="projectTypeCode">
-          <el-select v-model="form.projectTypeCode" placeholder="请选择项目类型" style="width: 100%">
-            <el-option v-for="item in projectTypeList" :key="item.code" :label="item.name" :value="item.code" />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="文档分类" prop="documentCategory">
-          <el-input v-model="form.documentCategory" placeholder="请输入文档分类" data-testid="project-form-document-category" />
-        </el-form-item>
-        <el-form-item label="备注" prop="remark">
-          <el-input v-model="form.remark" type="textarea" placeholder="请输入内容" data-testid="project-form-remark" />
-        </el-form-item>
+    <!-- 添加或修改/详情项目配置对话框 -->
+    <el-dialog v-model="dialog.visible" :title="dialog.title" width="900px" append-to-body data-testid="project-dialog">
+      <el-form
+        ref="projectFormRef"
+        :model="form"
+        :rules="dialogMode === 'edit' ? rules : undefined"
+        label-width="110px"
+        data-testid="project-form"
+        :disabled="dialogMode === 'detail'"
+      >
+        <el-row :gutter="16">
+          <el-col :span="12">
+            <el-form-item label="项目名称" prop="name">
+              <el-input v-model="form.name" placeholder="请输入项目名称" data-testid="project-form-name" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="客户类型" prop="customerType">
+              <el-select v-model="form.customerType" placeholder="请选择客户类型" style="width: 100%">
+                <el-option v-for="dict in doc_customer_type" :key="dict.value" :label="dict.label" :value="dict.value" />
+              </el-select>
+            </el-form-item>
+          </el-col>
+        </el-row>
+        <el-row :gutter="16">
+          <el-col :span="12">
+            <el-form-item label="业务类型" prop="businessType">
+              <el-select v-model="form.businessType" placeholder="请选择业务类型" style="width: 100%">
+                <el-option v-for="dict in doc_business_type" :key="dict.value" :label="dict.label" :value="dict.value" />
+              </el-select>
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="项目类型" prop="projectTypeCode">
+              <el-select v-model="form.projectTypeCode" placeholder="请选择项目类型" style="width: 100%">
+                <el-option v-for="item in projectTypeList" :key="item.code" :label="item.name" :value="item.code" />
+              </el-select>
+            </el-form-item>
+          </el-col>
+        </el-row>
+        <el-row :gutter="16">
+          <el-col :span="12">
+            <el-form-item label="文档分类" prop="documentCategory">
+              <el-input v-model="form.documentCategory" placeholder="请输入文档分类" data-testid="project-form-document-category" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="电信编号" prop="telecomCode">
+              <el-input v-model="form.telecomCode" placeholder="请输入电信编号" />
+            </el-form-item>
+          </el-col>
+        </el-row>
+        <el-row :gutter="16">
+          <el-col :span="12">
+            <el-form-item label="翔云编号" prop="xiangyunCode">
+              <el-input v-model="form.xiangyunCode" placeholder="请输入翔云编号" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="电信立项时间" prop="telecomProjectDate">
+              <el-date-picker v-model="form.telecomProjectDate" type="date" placeholder="选择日期" value-format="YYYY-MM-DD" style="width: 100%" />
+            </el-form-item>
+          </el-col>
+        </el-row>
+        <el-row :gutter="16">
+          <el-col :span="12">
+            <el-form-item label="计划开工时间" prop="planStartDate">
+              <el-date-picker v-model="form.planStartDate" type="date" placeholder="选择日期" value-format="YYYY-MM-DD" style="width: 100%" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="计划完工时间" prop="planEndDate">
+              <el-date-picker v-model="form.planEndDate" type="date" placeholder="选择日期" value-format="YYYY-MM-DD" style="width: 100%" />
+            </el-form-item>
+          </el-col>
+        </el-row>
+        <el-row :gutter="16">
+          <el-col :span="24">
+            <el-form-item label="备注" prop="remark">
+              <el-input v-model="form.remark" type="textarea" placeholder="请输入内容" data-testid="project-form-remark" />
+            </el-form-item>
+          </el-col>
+        </el-row>
       </el-form>
+      <div v-if="form.id" class="quick-action-bar" style="margin: 16px 0; display: flex; gap: 12px; padding-top: 16px; border-top: 1px solid #ebeef5">
+        <el-button type="success" plain icon="Plus" @click="handleAddWorkload">新增工作量</el-button>
+        <el-button type="warning" plain icon="Plus" @click="handleAddVisa">新增签证单</el-button>
+      </div>
       <template #footer>
         <div class="dialog-footer">
-          <el-button
-            type="primary"
-            data-testid="project-submit-button"
-            @click="submitForm"
-            v-hasPermi="[form.id ? 'docman:project:edit' : 'docman:project:add']"
-            >确 定</el-button
-          >
-          <el-button @click="cancel">取 消</el-button>
+          <template v-if="dialogMode === 'edit'">
+            <el-button
+              type="primary"
+              data-testid="project-submit-button"
+              @click="submitForm"
+              v-hasPermi="[form.id ? 'docman:project:edit' : 'docman:project:add']"
+              >确 定</el-button
+            >
+            <el-button @click="cancel">取 消</el-button>
+          </template>
+          <template v-else>
+            <el-button @click="cancel">关 闭</el-button>
+          </template>
         </div>
       </template>
     </el-dialog>
@@ -170,7 +214,6 @@ import { listProject, addProject, updateProject, delProject } from '@/api/docman
 import { archiveProject } from '@/api/docman/archive';
 import { listProjectType } from '@/api/docman/projectType';
 import { DocProject, DocProjectQuery, DocProjectForm, PageResult } from '@/api/docman/types';
-import { ElMessage } from 'element-plus';
 import { useUserStore } from '@/store/modules/user';
 import { handleApiError } from '@/utils/error';
 
@@ -179,9 +222,7 @@ const router = useRouter();
 const userStore = useUserStore();
 const isSuperAdmin = computed(() => userStore.roles.includes('superadmin'));
 
-const { doc_customer_type, doc_business_type, doc_project_status } = toRefs<any>(
-  proxy?.useDict('doc_customer_type', 'doc_business_type', 'doc_project_status')
-);
+const { doc_customer_type, doc_business_type } = toRefs<any>(proxy?.useDict('doc_customer_type', 'doc_business_type'));
 
 const projectList = ref<DocProject[]>([]);
 const total = ref(0);
@@ -196,6 +237,7 @@ const dialog = reactive<DialogOption>({
   visible: false,
   title: ''
 });
+const dialogMode = ref<'edit' | 'detail'>('edit');
 
 const initFormData: DocProjectForm = {
   id: undefined,
@@ -204,6 +246,11 @@ const initFormData: DocProjectForm = {
   customerType: 'telecom',
   businessType: 'pipeline',
   documentCategory: '',
+  telecomCode: '',
+  xiangyunCode: '',
+  telecomProjectDate: '',
+  planStartDate: '',
+  planEndDate: '',
   remark: ''
 };
 
@@ -225,6 +272,10 @@ const data = reactive({
 });
 
 const { queryParams, form, rules } = toRefs(data);
+
+function resolveProjectTypeName(projectTypeCode?: string) {
+  return projectTypeList.value.find((item) => item.code === projectTypeCode)?.name || projectTypeCode || '-';
+}
 
 /** 查询项目列表 */
 const getList = async () => {
@@ -264,6 +315,7 @@ function reset() {
 /** 新增按钮操作 */
 function handleAdd() {
   reset();
+  dialogMode.value = 'edit';
   dialog.visible = true;
   dialog.title = '新增项目';
 }
@@ -271,6 +323,7 @@ function handleAdd() {
 /** 修改按钮操作 */
 function handleUpdate(row: DocProject) {
   reset();
+  dialogMode.value = 'edit';
   dialog.visible = true;
   dialog.title = '修改项目';
   Object.assign(form.value, {
@@ -280,8 +333,49 @@ function handleUpdate(row: DocProject) {
     customerType: row.customerType,
     businessType: row.businessType,
     documentCategory: row.documentCategory,
+    telecomCode: (row as any).telecomCode || '',
+    xiangyunCode: (row as any).xiangyunCode || '',
+    telecomProjectDate: (row as any).telecomProjectDate || '',
+    planStartDate: (row as any).planStartDate || '',
+    planEndDate: (row as any).planEndDate || '',
     remark: row.remark
   });
+}
+
+/** 详情按钮操作 */
+function handleDetail(row: DocProject) {
+  reset();
+  dialogMode.value = 'detail';
+  dialog.visible = true;
+  dialog.title = '项目详情';
+  Object.assign(form.value, {
+    id: row.id,
+    name: row.name,
+    projectTypeCode: row.projectTypeCode,
+    customerType: row.customerType,
+    businessType: row.businessType,
+    documentCategory: row.documentCategory,
+    telecomCode: (row as any).telecomCode || '',
+    xiangyunCode: (row as any).xiangyunCode || '',
+    telecomProjectDate: (row as any).telecomProjectDate || '',
+    planStartDate: (row as any).planStartDate || '',
+    planEndDate: (row as any).planEndDate || '',
+    remark: row.remark
+  });
+}
+
+/** 新增工作量按钮 */
+function handleAddWorkload() {
+  if (form.value.id) {
+    handleWorkspace(form.value.id);
+  }
+}
+
+/** 新增签证单按钮 */
+function handleAddVisa() {
+  if (form.value.id) {
+    router.push(`/docman/visa/${form.value.id}`);
+  }
 }
 
 /** 取消按钮 */
@@ -343,11 +437,45 @@ function handleBalance(id: number) {
 function handleProcess(id: number) {
   router.push({ path: '/docman/process', query: { projectId: String(id) } });
 }
+
 function handleMembers(id: number) {
-  router.push({ path: '/docman/member', query: { projectId: String(id) } });
+  router.push(`/docman/member/${id}`);
 }
+
 function handleArchiveDetail(id: number) {
   router.push({ path: '/docman/archive', query: { projectId: String(id) } });
+}
+
+function handleCommand(command: string, row: DocProject) {
+  switch (command) {
+    case 'workspace':
+      handleWorkspace(row.id);
+      break;
+    case 'balance':
+      handleBalance(row.id);
+      break;
+    case 'visa':
+      router.push(`/docman/visa/${row.id}`);
+      break;
+    case 'process':
+      handleProcess(row.id);
+      break;
+    case 'member':
+      handleMembers(row.id);
+      break;
+    case 'log':
+      router.push(`/docman/plugin/log?projectId=${row.id}`);
+      break;
+    case 'archive':
+      handleArchive(row.id);
+      break;
+    case 'archiveDetail':
+      handleArchiveDetail(row.id);
+      break;
+    case 'delete':
+      handleDelete(row.id);
+      break;
+  }
 }
 
 /** 归档按钮操作 */
