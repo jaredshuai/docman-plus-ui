@@ -70,28 +70,77 @@
     <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize" @pagination="getList" />
 
     <!-- 添加或修改/详情项目配置对话框 -->
-    <el-dialog v-model="dialog.visible" :title="dialog.title" width="500px" append-to-body data-testid="project-dialog">
-      <el-form ref="projectFormRef" :model="form" :rules="dialogMode === 'edit' ? rules : undefined" label-width="100px" data-testid="project-form" disabled="detail" :disabled="dialogMode === 'detail'">
-        <el-form-item label="项目名称" prop="name">
-          <el-input v-model="form.name" placeholder="请输入项目名称" data-testid="project-form-name" />
-        </el-form-item>
-        <el-form-item label="客户类型" prop="customerType">
-          <el-select v-model="form.customerType" placeholder="请选择客户类型" style="width: 100%">
-            <el-option v-for="dict in doc_customer_type" :key="dict.value" :label="dict.label" :value="dict.value" />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="业务类型" prop="businessType">
-          <el-select v-model="form.businessType" placeholder="请选择业务类型" style="width: 100%">
-            <el-option v-for="dict in doc_business_type" :key="dict.value" :label="dict.label" :value="dict.value" />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="文档分类" prop="documentCategory">
-          <el-input v-model="form.documentCategory" placeholder="请输入文档分类" data-testid="project-form-document-category" />
-        </el-form-item>
-        <el-form-item label="备注" prop="remark">
-          <el-input v-model="form.remark" type="textarea" placeholder="请输入内容" data-testid="project-form-remark" />
-        </el-form-item>
+    <el-dialog v-model="dialog.visible" :title="dialog.title" width="900px" append-to-body data-testid="project-dialog">
+      <el-form ref="projectFormRef" :model="form" :rules="dialogMode === 'edit' ? rules : undefined" label-width="110px" data-testid="project-form" disabled="detail" :disabled="dialogMode === 'detail'">
+        <el-row :gutter="16">
+          <el-col :span="12">
+            <el-form-item label="项目名称" prop="name">
+              <el-input v-model="form.name" placeholder="请输入项目名称" data-testid="project-form-name" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="客户类型" prop="customerType">
+              <el-select v-model="form.customerType" placeholder="请选择客户类型" style="width: 100%">
+                <el-option v-for="dict in doc_customer_type" :key="dict.value" :label="dict.label" :value="dict.value" />
+              </el-select>
+            </el-form-item>
+          </el-col>
+        </el-row>
+        <el-row :gutter="16">
+          <el-col :span="12">
+            <el-form-item label="业务类型" prop="businessType">
+              <el-select v-model="form.businessType" placeholder="请选择业务类型" style="width: 100%">
+                <el-option v-for="dict in doc_business_type" :key="dict.value" :label="dict.label" :value="dict.value" />
+              </el-select>
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="文档分类" prop="documentCategory">
+              <el-input v-model="form.documentCategory" placeholder="请输入文档分类" data-testid="project-form-document-category" />
+            </el-form-item>
+          </el-col>
+        </el-row>
+        <el-row :gutter="16">
+          <el-col :span="12">
+            <el-form-item label="电信编号" prop="telecomCode">
+              <el-input v-model="form.telecomCode" placeholder="请输入电信编号" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="翔云编号" prop="xiangyunCode">
+              <el-input v-model="form.xiangyunCode" placeholder="请输入翔云编号" />
+            </el-form-item>
+          </el-col>
+        </el-row>
+        <el-row :gutter="16">
+          <el-col :span="8">
+            <el-form-item label="电信立项时间" prop="telecomProjectDate">
+              <el-date-picker v-model="form.telecomProjectDate" type="date" placeholder="选择日期" value-format="YYYY-MM-DD" style="width: 100%" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="8">
+            <el-form-item label="计划开工时间" prop="planStartDate">
+              <el-date-picker v-model="form.planStartDate" type="date" placeholder="选择日期" value-format="YYYY-MM-DD" style="width: 100%" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="8">
+            <el-form-item label="计划完工时间" prop="planEndDate">
+              <el-date-picker v-model="form.planEndDate" type="date" placeholder="选择日期" value-format="YYYY-MM-DD" style="width: 100%" />
+            </el-form-item>
+          </el-col>
+        </el-row>
+        <el-row :gutter="16">
+          <el-col :span="24">
+            <el-form-item label="备注" prop="remark">
+              <el-input v-model="form.remark" type="textarea" placeholder="请输入内容" data-testid="project-form-remark" />
+            </el-form-item>
+          </el-col>
+        </el-row>
       </el-form>
+      <div class="quick-action-bar" style="margin: 16px 0; display: flex; gap: 12px; padding-top: 16px; border-top: 1px solid #ebeef5;">
+        <el-button type="success" plain icon="Plus" @click="handleAddWorkload">新增工作量</el-button>
+        <el-button type="warning" plain icon="Plus" @click="handleAddVisa">新增签证单</el-button>
+      </div>
       <template #footer>
         <div class="dialog-footer">
           <template v-if="dialogMode === 'edit'">
@@ -151,6 +200,11 @@ const initFormData: DocProjectForm = {
   customerType: 'telecom',
   businessType: 'pipeline',
   documentCategory: '',
+  telecomCode: '',
+  xiangyunCode: '',
+  telecomProjectDate: '',
+  planStartDate: '',
+  planEndDate: '',
   remark: ''
 };
 
@@ -226,6 +280,11 @@ function handleUpdate(row: DocProject) {
     customerType: row.customerType,
     businessType: row.businessType,
     documentCategory: row.documentCategory,
+    telecomCode: (row as any).telecomCode || '',
+    xiangyunCode: (row as any).xiangyunCode || '',
+    telecomProjectDate: (row as any).telecomProjectDate || '',
+    planStartDate: (row as any).planStartDate || '',
+    planEndDate: (row as any).planEndDate || '',
     remark: row.remark
   });
 }
@@ -242,8 +301,28 @@ function handleDetail(row: DocProject) {
     customerType: row.customerType,
     businessType: row.businessType,
     documentCategory: row.documentCategory,
+    telecomCode: (row as any).telecomCode || '',
+    xiangyunCode: (row as any).xiangyunCode || '',
+    telecomProjectDate: (row as any).telecomProjectDate || '',
+    planStartDate: (row as any).planStartDate || '',
+    planEndDate: (row as any).planEndDate || '',
     remark: row.remark
   });
+}
+
+/** 新增工作量按钮 */
+function handleAddWorkload() {
+  if (form.value.id) {
+    // TODO: 跳转到工作量界面
+    router.push(`/docman/workload/${form.value.id}`);
+  }
+}
+
+/** 新增签证单按钮 */
+function handleAddVisa() {
+  if (form.value.id) {
+    router.push(`/docman/visa/${form.value.id}`);
+  }
 }
 
 /** 取消按钮 */
