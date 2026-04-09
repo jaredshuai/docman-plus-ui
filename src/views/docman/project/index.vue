@@ -42,9 +42,10 @@
         </template>
       </el-table-column>
       <el-table-column prop="ownerName" label="负责人" width="120" />
-      <el-table-column label="操作" align="center" width="180" class-name="small-padding fixed-width">
+      <el-table-column label="操作" align="center" width="220" class-name="small-padding fixed-width">
         <template #default="{ row }">
           <el-button v-hasPermi="['docman:project:edit']" size="small" type="primary" plain @click="handleUpdate(row)">编辑</el-button>
+          <el-button v-hasPermi="['docman:project:query']" size="small" type="info" plain @click="handleDetail(row)">详情</el-button>
           <el-button size="small" @click="handleDocuments(row.id)" v-hasPermi="['docman:document:list']">文档中心</el-button>
           <el-dropdown @command="(command: string) => handleCommand(command, row)">
             <el-button size="small" type="info" plain>
@@ -68,9 +69,9 @@
 
     <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize" @pagination="getList" />
 
-    <!-- 添加或修改项目配置对话框 -->
+    <!-- 添加或修改/详情项目配置对话框 -->
     <el-dialog v-model="dialog.visible" :title="dialog.title" width="500px" append-to-body data-testid="project-dialog">
-      <el-form ref="projectFormRef" :model="form" :rules="rules" label-width="100px" data-testid="project-form">
+      <el-form ref="projectFormRef" :model="form" :rules="dialogMode === 'edit' ? rules : undefined" label-width="100px" data-testid="project-form" disabled="detail" :disabled="dialogMode === 'detail'">
         <el-form-item label="项目名称" prop="name">
           <el-input v-model="form.name" placeholder="请输入项目名称" data-testid="project-form-name" />
         </el-form-item>
@@ -93,14 +94,19 @@
       </el-form>
       <template #footer>
         <div class="dialog-footer">
-          <el-button
-            type="primary"
-            data-testid="project-submit-button"
-            @click="submitForm"
-            v-hasPermi="[form.id ? 'docman:project:edit' : 'docman:project:add']"
-            >确 定</el-button
-          >
-          <el-button @click="cancel">取 消</el-button>
+          <template v-if="dialogMode === 'edit'">
+            <el-button
+              type="primary"
+              data-testid="project-submit-button"
+              @click="submitForm"
+              v-hasPermi="[form.id ? 'docman:project:edit' : 'docman:project:add']"
+              >确 定</el-button
+            >
+            <el-button @click="cancel">取 消</el-button>
+          </template>
+          <template v-else>
+            <el-button @click="cancel">关 闭</el-button>
+          </template>
         </div>
       </template>
     </el-dialog>
@@ -137,6 +143,7 @@ const dialog = reactive<DialogOption>({
   visible: false,
   title: ''
 });
+const dialogMode = ref<'edit' | 'detail'>('edit');
 
 const initFormData: DocProjectForm = {
   id: undefined,
@@ -210,8 +217,25 @@ function handleAdd() {
 /** 修改按钮操作 */
 function handleUpdate(row: DocProject) {
   reset();
+  dialogMode.value = 'edit';
   dialog.visible = true;
   dialog.title = '修改项目';
+  Object.assign(form.value, {
+    id: row.id,
+    name: row.name,
+    customerType: row.customerType,
+    businessType: row.businessType,
+    documentCategory: row.documentCategory,
+    remark: row.remark
+  });
+}
+
+/** 详情按钮操作 */
+function handleDetail(row: DocProject) {
+  reset();
+  dialogMode.value = 'detail';
+  dialog.visible = true;
+  dialog.title = '项目详情';
   Object.assign(form.value, {
     id: row.id,
     name: row.name,
