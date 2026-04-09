@@ -52,6 +52,7 @@
             </el-button>
             <template #dropdown>
               <el-dropdown-menu>
+                <el-dropdown-item command="visa">签证单</el-dropdown-item>
                 <el-dropdown-item command="archive" v-if="row.status === 'active'" v-hasPermi="['docman:archive:execute']">归档</el-dropdown-item>
                 <el-dropdown-item command="process" v-hasPermi="['docman:process:query']">流程</el-dropdown-item>
                 <el-dropdown-item command="member" v-hasPermi="['docman:project:query']">成员管理</el-dropdown-item>
@@ -286,6 +287,9 @@ function handleArchiveDetail(id: number) {
 
 function handleCommand(command: string, row: DocProject) {
   switch (command) {
+    case 'visa':
+      router.push(`/docman/visa/${row.id}`);
+      break;
     case 'process':
       handleProcess(row.id);
       break;

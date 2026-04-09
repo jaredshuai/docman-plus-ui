@@ -124,6 +124,12 @@ export const dynamicRoutes: RouteRecordRaw[] = [
         component: () => import('@/views/docman/nodedeadline/index.vue'),
         name: 'DocNodeDeadline',
         meta: { title: '节点时限管理', noCache: true, activeMenu: '/docman/project', permissions: ['docman:nodedeadline:query'] }
+      },
+      {
+        path: 'visa/:projectId',
+        component: () => import('@/views/docman/visa/index.vue'),
+        name: 'DocVisa',
+        meta: { title: '签证单', activeMenu: '/docman/project' }
       }
     ]
   }
