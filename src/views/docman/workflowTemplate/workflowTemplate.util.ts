@@ -14,6 +14,13 @@ export interface TaskPreset {
   description?: string;
 }
 
+export interface FieldGroupReference {
+  value: string;
+  label: string;
+  fields: string[];
+  completionRule?: string;
+}
+
 export const COMPLETION_RULE_OPTIONS: TaskOption[] = [
   { label: '项目基础信息已具备', value: 'project_basic_info_present' },
   { label: '存在有效图纸', value: 'drawing_exists' },
@@ -70,6 +77,55 @@ export const PLUGIN_RUN_PRESETS: TaskPreset[] = [
     taskCode: 'export_run',
     taskName: '导出文本',
     description: '文本导出插件事项'
+  }
+];
+
+export const FIELD_GROUP_REFERENCES: FieldGroupReference[] = [
+  {
+    value: 'project_info',
+    label: '项目信息字段组',
+    fields: [
+      'name',
+      'projectTypeCode',
+      'customerType',
+      'businessType',
+      'documentCategory',
+      'telecomCode',
+      'xiangyunCode',
+      'telecomProjectDate',
+      'planStartDate',
+      'planEndDate',
+      'remark'
+    ],
+    completionRule: 'project_basic_info_present'
+  },
+  {
+    value: 'drawing_input',
+    label: '图纸线字段组',
+    fields: ['drawingCode', 'orderSerialNo', 'workContent', 'includeInProject', 'remark'],
+    completionRule: 'drawing_exists'
+  },
+  {
+    value: 'visa_input',
+    label: '签证线字段组',
+    fields: ['reason', 'contentBasis', 'amount', 'visaDate', 'includeInProject', 'remark'],
+    completionRule: 'visa_exists'
+  },
+  {
+    value: 'workload_input',
+    label: '工作量线字段组',
+    fields: ['estimatedPrice', 'enable', 'remark', 'details.name', 'details.alias', 'details.price', 'details.remark']
+  },
+  {
+    value: 'estimate_run',
+    label: '估算插件口径',
+    fields: ['drawingCount', 'visaCount', 'estimateAmount', 'summary'],
+    completionRule: 'estimate_snapshot_exists'
+  },
+  {
+    value: 'export_text',
+    label: '文本导出口径',
+    fields: ['archiveFolderName', 'generatedFiles', 'pluginCodes']
   }
 ];
 
@@ -199,6 +255,10 @@ export function getTaskDescriptionPlaceholder(taskType?: string): string {
     return '经理调整说明';
   }
   return '事项说明';
+}
+
+export function getFieldGroupReference(value?: string): FieldGroupReference | undefined {
+  return FIELD_GROUP_REFERENCES.find((item) => item.value === value);
 }
 
 export function serializeTemplateForm(form: DocWorkflowTemplateForm): DocWorkflowTemplateForm {

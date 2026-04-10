@@ -5,6 +5,8 @@ import {
   COMPLETION_RULE_OPTIONS,
   createEmptyNode,
   createEmptyTask,
+  FIELD_GROUP_REFERENCES,
+  getFieldGroupReference,
   getCompletionRuleOptions,
   getTaskDescriptionPlaceholder,
   getTaskPresets,
@@ -74,5 +76,11 @@ describe('workflowTemplate util', () => {
     expect(task.completionRule).toBe('drawing_exists');
     expect(getTaskDescriptionPlaceholder('form_fill')).toContain('工作量线');
     expect(getTaskDescriptionPlaceholder('plugin_run')).toContain('插件');
+  });
+
+  it('exposes field-group references for admin guidance', () => {
+    expect(FIELD_GROUP_REFERENCES.map((item) => item.value)).toContain('workload_input');
+    expect(getFieldGroupReference('drawing_input')?.fields).toContain('drawingCode');
+    expect(getFieldGroupReference('estimate_run')?.completionRule).toBe('estimate_snapshot_exists');
   });
 });

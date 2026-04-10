@@ -90,6 +90,23 @@
           </el-space>
         </el-card>
 
+        <el-card shadow="never" style="margin-bottom: 16px">
+          <template #header>字段模式参考</template>
+          <el-table :data="FIELD_GROUP_REFERENCES" size="small" border>
+            <el-table-column prop="label" label="字段组" min-width="160" />
+            <el-table-column label="推荐字段" min-width="420" show-overflow-tooltip>
+              <template #default="{ row }">
+                {{ row.fields.join(', ') }}
+              </template>
+            </el-table-column>
+            <el-table-column label="建议完成规则" min-width="180">
+              <template #default="{ row }">
+                <span>{{ row.completionRule || '-' }}</span>
+              </template>
+            </el-table-column>
+          </el-table>
+        </el-card>
+
         <div class="node-toolbar">
           <span class="section-title">节点与事项配置</span>
           <el-button type="primary" plain icon="Plus" @click="handleAddNode">新增节点</el-button>
@@ -158,6 +175,7 @@
                     <el-option v-for="item in getTaskPresets(row.taskType)" :key="item.value" :label="item.label" :value="item.value" />
                   </el-select>
                   <span v-else class="plugin-placeholder">当前事项类型暂无预设</span>
+                  <div v-if="resolveFieldGroupHint(row)" class="field-hint">{{ resolveFieldGroupHint(row) }}</div>
                 </template>
               </el-table-column>
               <el-table-column label="完成规则 / 字段模式占位" min-width="180">
@@ -230,10 +248,12 @@ import type { DocPluginInfo, DocProjectType, DocWorkflowTemplate, DocWorkflowTem
 import { handleApiError } from '@/utils/error';
 import {
   applyTaskPreset,
+  FIELD_GROUP_REFERENCES,
   cloneNodes,
   createEmptyNode,
   createEmptyTask,
   getCompletionRuleOptions,
+  getFieldGroupReference,
   getTaskDescriptionPlaceholder,
   getTaskPresets,
   normalizeTemplateForm,
@@ -323,6 +343,29 @@ function handleRemoveTask(nodeIndex: number, taskIndex: number) {
   node.tasks = (node.tasks || []).filter((_, index) => index !== taskIndex);
 }
 
+function resolveFieldGroupHint(task: DocWorkflowTemplateForm['nodes'][number]['tasks'][number]) {
+  if (!task) return '';
+  const presetKey = (() => {
+    switch (task.taskCode) {
+      case 'project_info_fill':
+        return 'project_info';
+      case 'drawing_fill':
+        return 'drawing_input';
+      case 'visa_fill':
+        return 'visa_input';
+      case 'workload_fill':
+        return 'workload_input';
+      case 'estimate_run':
+        return 'estimate_run';
+      case 'export_run':
+        return 'export_text';
+      default:
+        return '';
+    }
+  })();
+  return getFieldGroupReference(presetKey)?.label || '';
+}
+
 function handleApplyTaskPreset(task: DocWorkflowTemplateForm['nodes'][number]['tasks'][number], presetValue: string) {
   Object.assign(task, applyTaskPreset(task, presetValue));
 }
@@ -387,5 +430,11 @@ onMounted(async () => {
 .plugin-placeholder {
   color: #909399;
   font-size: 13px;
+}
+
+.field-hint {
+  margin-top: 6px;
+  color: #909399;
+  font-size: 12px;
 }
 </style>
