@@ -1,8 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import {
+  applyTaskPreset,
   cloneNodes,
+  COMPLETION_RULE_OPTIONS,
   createEmptyNode,
   createEmptyTask,
+  getCompletionRuleOptions,
+  getTaskDescriptionPlaceholder,
+  getTaskPresets,
   joinPluginCodes,
   normalizeTemplateForm,
   serializeTemplateForm,
@@ -53,5 +58,21 @@ describe('workflowTemplate util', () => {
 
     expect(payload.nodes?.[0].tasks?.[0].pluginCodes).toBe('p1,p2');
     expect(payload.nodes?.[0].tasks?.[0].pluginCodeList).toBeUndefined();
+  });
+
+  it('provides completion-rule and task presets by task type', () => {
+    expect(getCompletionRuleOptions('form_fill').map((item) => item.value)).toEqual(['project_basic_info_present', 'drawing_exists', 'visa_exists']);
+    expect(getCompletionRuleOptions('plugin_run')).toEqual([COMPLETION_RULE_OPTIONS[3]]);
+    expect(getTaskPresets('form_fill').map((item) => item.value)).toContain('workload_input');
+    expect(getTaskPresets('plugin_run').map((item) => item.value)).toContain('estimate_run');
+  });
+
+  it('applies preset values and exposes contextual description placeholders', () => {
+    const task = applyTaskPreset(createEmptyTask(), 'drawing_input');
+    expect(task.taskCode).toBe('drawing_fill');
+    expect(task.taskName).toBe('录入图纸信息');
+    expect(task.completionRule).toBe('drawing_exists');
+    expect(getTaskDescriptionPlaceholder('form_fill')).toContain('工作量线');
+    expect(getTaskDescriptionPlaceholder('plugin_run')).toContain('插件');
   });
 });

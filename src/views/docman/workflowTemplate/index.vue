@@ -147,8 +147,33 @@
               <el-table-column label="排序" width="90">
                 <template #default="{ row }"><el-input-number v-model="row.sortOrder" :min="0" style="width: 100%" /></template>
               </el-table-column>
+              <el-table-column label="字段模式预设" min-width="170">
+                <template #default="{ row }">
+                  <el-select
+                    v-if="getTaskPresets(row.taskType).length"
+                    placeholder="选择预设"
+                    style="width: 100%"
+                    @change="(value) => handleApplyTaskPreset(row, String(value || ''))"
+                  >
+                    <el-option v-for="item in getTaskPresets(row.taskType)" :key="item.value" :label="item.label" :value="item.value" />
+                  </el-select>
+                  <span v-else class="plugin-placeholder">当前事项类型暂无预设</span>
+                </template>
+              </el-table-column>
               <el-table-column label="完成规则 / 字段模式占位" min-width="180">
-                <template #default="{ row }"><el-input v-model="row.completionRule" placeholder="如 estimate_snapshot_exists" /></template>
+                <template #default="{ row }">
+                  <el-select
+                    v-model="row.completionRule"
+                    filterable
+                    allow-create
+                    clearable
+                    default-first-option
+                    placeholder="选择或输入规则编码"
+                    style="width: 100%"
+                  >
+                    <el-option v-for="item in getCompletionRuleOptions(row.taskType)" :key="item.value" :label="item.label" :value="item.value" />
+                  </el-select>
+                </template>
               </el-table-column>
               <el-table-column label="插件编码" min-width="170">
                 <template #default="{ row }">
@@ -166,7 +191,9 @@
                 </template>
               </el-table-column>
               <el-table-column label="说明" min-width="160">
-                <template #default="{ row }"><el-input v-model="row.description" placeholder="字段模式备注 / 说明" /></template>
+                <template #default="{ row }"
+                  ><el-input v-model="row.description" :placeholder="getTaskDescriptionPlaceholder(row.taskType)"
+                /></template>
               </el-table-column>
               <el-table-column label="状态" width="120">
                 <template #default="{ row }">
@@ -201,7 +228,17 @@ import { deleteWorkflowTemplate, listWorkflowTemplate, saveWorkflowTemplate } fr
 import { listPlugins } from '@/api/docman/plugin';
 import type { DocPluginInfo, DocProjectType, DocWorkflowTemplate, DocWorkflowTemplateForm } from '@/api/docman/types';
 import { handleApiError } from '@/utils/error';
-import { cloneNodes, createEmptyNode, createEmptyTask, normalizeTemplateForm, serializeTemplateForm } from './workflowTemplate.util';
+import {
+  applyTaskPreset,
+  cloneNodes,
+  createEmptyNode,
+  createEmptyTask,
+  getCompletionRuleOptions,
+  getTaskDescriptionPlaceholder,
+  getTaskPresets,
+  normalizeTemplateForm,
+  serializeTemplateForm
+} from './workflowTemplate.util';
 
 const loading = ref(false);
 const queryProjectTypeCode = ref('');
@@ -284,6 +321,10 @@ function handleRemoveTask(nodeIndex: number, taskIndex: number) {
   const node = form.nodes?.[nodeIndex];
   if (!node) return;
   node.tasks = (node.tasks || []).filter((_, index) => index !== taskIndex);
+}
+
+function handleApplyTaskPreset(task: DocWorkflowTemplateForm['nodes'][number]['tasks'][number], presetValue: string) {
+  Object.assign(task, applyTaskPreset(task, presetValue));
 }
 
 async function handleSave() {
