@@ -8,9 +8,8 @@ describe('balance util', () => {
   });
 
   it('creates form defaults from latest balance record', () => {
-    expect(createBalanceForm()).toEqual({ id: undefined, materialPrice: undefined, balanceRemark: '' });
+    expect(createBalanceForm()).toEqual({ materialPrice: undefined, balanceRemark: '' });
     expect(createBalanceForm({ id: 3, projectId: 9, materialPrice: 18.5, balanceRemark: 'done' })).toEqual({
-      id: 3,
       materialPrice: 18.5,
       balanceRemark: 'done'
     });

@@ -6,7 +6,6 @@ export function canSubmitBalance(snapshot?: DocProjectEstimateSnapshot): boolean
 
 export function createBalanceForm(balance?: DocProjectBalanceAdjustment) {
   return {
-    id: balance?.id,
     materialPrice: balance?.materialPrice,
     balanceRemark: balance?.balanceRemark ?? ''
   };

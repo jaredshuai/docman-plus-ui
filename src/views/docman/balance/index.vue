@@ -141,7 +141,6 @@ async function handleSaveBalance() {
   saving.value = true;
   try {
     await saveProjectBalance(projectId.value, {
-      id: balanceForm.id,
       materialPrice: balanceForm.materialPrice,
       balanceRemark: balanceForm.balanceRemark
     });
