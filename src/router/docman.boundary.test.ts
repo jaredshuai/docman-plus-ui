@@ -32,4 +32,10 @@ describe('docman route boundaries', () => {
     expect(projectSource).toMatch(/command="drawing"/);
     expect(projectSource).toMatch(/command="visa"/);
   });
+
+  it('keeps workload line reachable from docman project routes', () => {
+    expect(getRouteBlock('workload/:projectId')).toMatch(/DocWorkload/);
+    expect(projectSource).toMatch(/command="workload"/);
+    expect(projectSource).toMatch(/handleAddWorkload/);
+  });
 });

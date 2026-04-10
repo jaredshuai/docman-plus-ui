@@ -95,6 +95,48 @@ export interface DocProjectDrawingForm {
   remark?: string;
 }
 
+export interface DocProjectAddRecordDetail {
+  id?: number;
+  projectId: number;
+  projectAddRecordId?: number;
+  name?: string;
+  alias?: string;
+  price?: number;
+  remark?: string;
+  createTime?: string;
+  updateTime?: string;
+}
+
+export interface DocProjectAddRecord {
+  id?: number;
+  projectId: number;
+  enable?: boolean;
+  estimatedPrice?: number;
+  remark?: string;
+  details?: DocProjectAddRecordDetail[];
+  createTime?: string;
+  updateTime?: string;
+}
+
+export interface DocProjectAddRecordDetailForm {
+  id?: number;
+  projectId: string | number;
+  projectAddRecordId?: number;
+  name?: string;
+  alias?: string;
+  price?: number;
+  remark?: string;
+}
+
+export interface DocProjectAddRecordForm {
+  id?: number;
+  projectId: string | number;
+  enable?: boolean;
+  estimatedPrice?: number;
+  remark?: string;
+  details?: DocProjectAddRecordDetailForm[];
+}
+
 export interface DocProjectVisa {
   id: number;
   projectId: number;
