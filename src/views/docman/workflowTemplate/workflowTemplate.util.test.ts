@@ -65,6 +65,7 @@ describe('workflowTemplate util', () => {
   it('provides completion-rule and task presets by task type', () => {
     expect(getCompletionRuleOptions('form_fill').map((item) => item.value)).toEqual(['project_basic_info_present', 'drawing_exists', 'visa_exists']);
     expect(getCompletionRuleOptions('plugin_run')).toEqual([COMPLETION_RULE_OPTIONS[3]]);
+    expect(getCompletionRuleOptions('manager_adjust')).toEqual([COMPLETION_RULE_OPTIONS[4]]);
     expect(getTaskPresets('form_fill').map((item) => item.value)).toContain('workload_input');
     expect(getTaskPresets('plugin_run').map((item) => item.value)).toContain('estimate_run');
   });
@@ -82,5 +83,6 @@ describe('workflowTemplate util', () => {
     expect(FIELD_GROUP_REFERENCES.map((item) => item.value)).toContain('workload_input');
     expect(getFieldGroupReference('drawing_input')?.fields).toContain('drawingCode');
     expect(getFieldGroupReference('estimate_run')?.completionRule).toBe('estimate_snapshot_exists');
+    expect(getFieldGroupReference('balance_adjustment')?.completionRule).toBe('balance_adjustment_exists');
   });
 });

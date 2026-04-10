@@ -357,6 +357,8 @@ function resolveFieldGroupHint(task: DocWorkflowTemplateForm['nodes'][number]['t
         return 'workload_input';
       case 'estimate_run':
         return 'estimate_run';
+      case 'manager_adjust':
+        return 'balance_adjustment';
       case 'export_run':
         return 'export_text';
       default:

@@ -25,7 +25,8 @@ export const COMPLETION_RULE_OPTIONS: TaskOption[] = [
   { label: '项目基础信息已具备', value: 'project_basic_info_present' },
   { label: '存在有效图纸', value: 'drawing_exists' },
   { label: '存在有效签证', value: 'visa_exists' },
-  { label: '存在估算快照', value: 'estimate_snapshot_exists' }
+  { label: '存在估算快照', value: 'estimate_snapshot_exists' },
+  { label: '存在平料记录', value: 'balance_adjustment_exists' }
 ];
 
 export const FORM_FILL_PRESETS: TaskPreset[] = [
@@ -123,6 +124,12 @@ export const FIELD_GROUP_REFERENCES: FieldGroupReference[] = [
     completionRule: 'estimate_snapshot_exists'
   },
   {
+    value: 'balance_adjustment',
+    label: '项目经理平料口径',
+    fields: ['materialPrice', 'balanceRemark', 'status'],
+    completionRule: 'balance_adjustment_exists'
+  },
+  {
     value: 'export_text',
     label: '文本导出口径',
     fields: ['archiveFolderName', 'generatedFiles', 'pluginCodes']
@@ -209,10 +216,13 @@ export function joinPluginCodes(pluginCodeList?: string[]): string {
 
 export function getCompletionRuleOptions(taskType?: string): TaskOption[] {
   if (taskType === 'form_fill') {
-    return COMPLETION_RULE_OPTIONS.filter((item) => item.value !== 'estimate_snapshot_exists');
+    return COMPLETION_RULE_OPTIONS.filter((item) => !['estimate_snapshot_exists', 'balance_adjustment_exists'].includes(item.value));
   }
   if (taskType === 'plugin_run') {
     return COMPLETION_RULE_OPTIONS.filter((item) => item.value === 'estimate_snapshot_exists');
+  }
+  if (taskType === 'manager_adjust') {
+    return COMPLETION_RULE_OPTIONS.filter((item) => item.value === 'balance_adjustment_exists');
   }
   return COMPLETION_RULE_OPTIONS;
 }
