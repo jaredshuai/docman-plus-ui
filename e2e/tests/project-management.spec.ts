@@ -26,9 +26,14 @@ test.describe('P1 项目管理真实流程', () => {
     await page.goto(DOCMAN_URLS.project);
     await expect(page.locator('[data-testid="project-page"], .app-container').first()).toBeVisible({ timeout: 20000 });
 
-    const projectCard = page.locator('[data-testid="project-card"]').filter({ hasText: projectName }).first();
-    await expect(projectCard).toBeVisible({ timeout: 15000 });
-    await projectCard.getByRole('button', { name: '删除' }).click();
+    await page.getByTestId('project-search-name').fill(projectName);
+    await page.getByTestId('project-search-submit').click();
+    const projectTable = page.locator('[data-testid="project-table"]');
+    await expect(projectTable).toContainText(projectName, { timeout: 15000 });
+    const projectRow = projectTable.locator('.el-table__row').filter({ hasText: projectName }).first();
+    await expect(projectRow).toBeVisible({ timeout: 15000 });
+    await projectRow.getByRole('button', { name: '更多' }).click();
+    await page.getByRole('menuitem', { name: '删除' }).click();
 
     const confirmDialog = page.locator('.el-message-box').last();
     await expect(confirmDialog).toBeVisible({ timeout: 10000 });

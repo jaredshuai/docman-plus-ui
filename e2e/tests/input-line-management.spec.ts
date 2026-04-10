@@ -33,9 +33,9 @@ test.describe('P1 图纸线与签证线真实流程', () => {
       await expect(page.getByText('新增成功', { exact: true })).toBeVisible({ timeout: 10000 });
       await page.goto(`${DOCMAN_URLS.drawing}/${project.id}`);
 
-      const drawingRow = page.locator('[data-testid="drawing-table"] .el-table__row').filter({ hasText: drawingCode }).first();
-      await expect(drawingRow).toBeVisible({ timeout: 15000 });
-      await drawingRow.getByRole('button', { name: '编辑' }).click();
+      const drawingTable = page.locator('[data-testid="drawing-table"]');
+      await expect(drawingTable).toContainText(drawingCode, { timeout: 15000 });
+      await drawingTable.getByRole('button', { name: '编辑' }).first().click();
       const editDrawingDialog = page.getByRole('dialog').filter({ hasText: '编辑图纸' }).first();
       await editDrawingDialog.getByTestId('drawing-form-remark').fill(`${drawingRemark}-edited`);
       const updateDrawingResponse = page.waitForResponse((response) => {
@@ -49,8 +49,9 @@ test.describe('P1 图纸线与签证线真实流程', () => {
       const deleteDrawingResponse = page.waitForResponse((response) => {
         return response.url().includes('/docman/project/drawing/') && response.request().method() === 'DELETE';
       });
-      const refreshedDrawingRow = page.locator('[data-testid="drawing-table"] .el-table__row').filter({ hasText: drawingCode }).first();
-      await refreshedDrawingRow.getByRole('button', { name: '删除' }).click();
+      const refreshedDrawingTable = page.locator('[data-testid="drawing-table"]');
+      await expect(refreshedDrawingTable).toContainText(drawingCode, { timeout: 15000 });
+      await refreshedDrawingTable.getByRole('button', { name: '删除' }).first().click();
       const drawingConfirm = page.locator('.el-message-box').last();
       await expect(drawingConfirm).toBeVisible({ timeout: 10000 });
       await drawingConfirm.getByRole('button', { name: '确定' }).click();
@@ -80,9 +81,9 @@ test.describe('P1 图纸线与签证线真实流程', () => {
       await expect(page.getByText('新增成功', { exact: true })).toBeVisible({ timeout: 10000 });
       await page.goto(`${DOCMAN_URLS.visa}/${project.id}`);
 
-      const visaRow = page.locator('[data-testid="visa-table"] .el-table__row').filter({ hasText: visaReason }).first();
-      await expect(visaRow).toBeVisible({ timeout: 15000 });
-      await visaRow.getByRole('button', { name: '编辑' }).click();
+      const visaTable = page.locator('[data-testid="visa-table"]');
+      await expect(visaTable).toContainText(visaReason, { timeout: 15000 });
+      await visaTable.getByRole('button', { name: '编辑' }).first().click();
       const editVisaDialog = page.getByRole('dialog').filter({ hasText: '编辑签证单' }).first();
       await editVisaDialog.getByTestId('visa-form-remark').fill(`${visaRemark}-edited`);
       const updateVisaResponse = page.waitForResponse((response) => {
@@ -96,8 +97,9 @@ test.describe('P1 图纸线与签证线真实流程', () => {
       const deleteVisaResponse = page.waitForResponse((response) => {
         return response.url().includes('/docman/project/visa/') && response.request().method() === 'DELETE';
       });
-      const refreshedVisaRow = page.locator('[data-testid="visa-table"] .el-table__row').filter({ hasText: visaReason }).first();
-      await refreshedVisaRow.getByRole('button', { name: '删除' }).click();
+      const refreshedVisaTable = page.locator('[data-testid="visa-table"]');
+      await expect(refreshedVisaTable).toContainText(visaReason, { timeout: 15000 });
+      await refreshedVisaTable.getByRole('button', { name: '删除' }).first().click();
       const visaConfirm = page.locator('.el-message-box').last();
       await expect(visaConfirm).toBeVisible({ timeout: 10000 });
       await visaConfirm.getByRole('button', { name: '确定' }).click();
