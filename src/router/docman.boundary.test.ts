@@ -25,4 +25,11 @@ describe('docman route boundaries', () => {
     expect(projectSource).toMatch(/workflow-template/);
     expect(projectSource).toMatch(/v-hasPermi="\['docman:process:query'\]"/);
   });
+
+  it('keeps drawing and visa input lines reachable from docman project routes', () => {
+    expect(getRouteBlock('drawing/:projectId')).toMatch(/DocDrawing/);
+    expect(getRouteBlock('visa/:projectId')).toMatch(/DocVisa/);
+    expect(projectSource).toMatch(/command="drawing"/);
+    expect(projectSource).toMatch(/command="visa"/);
+  });
 });

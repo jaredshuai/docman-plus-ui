@@ -165,6 +165,12 @@ export const dynamicRoutes: RouteRecordRaw[] = [
         meta: { title: '管理员管理', noCache: true, activeMenu: '/docman/project' }
       },
       {
+        path: 'drawing/:projectId',
+        component: () => import('@/views/docman/drawing/index.vue'),
+        name: 'DocDrawing',
+        meta: { title: '图纸录入', activeMenu: '/docman/project' }
+      },
+      {
         path: 'visa/:projectId',
         component: () => import('@/views/docman/visa/index.vue'),
         name: 'DocVisa',

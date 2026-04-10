@@ -1,13 +1,13 @@
 <template>
-  <div class="app-container" data-testid="visa-page">
+  <div class="app-container" data-testid="drawing-page">
     <el-page-header @back="router.back()">
-      <template #content>签证单</template>
+      <template #content>图纸录入</template>
     </el-page-header>
 
     <el-alert v-if="loadError" :title="loadError" type="warning" show-icon :closable="false" class="mb8" style="margin-top: 16px" />
     <el-alert
       v-else-if="!hasProjectId"
-      title="缺少项目上下文，请从项目页进入签证录入。"
+      title="缺少项目上下文，请从项目页进入图纸录入。"
       type="info"
       show-icon
       :closable="false"
@@ -18,17 +18,16 @@
     <template v-else>
       <el-row :gutter="10" class="mb8" style="margin-top: 16px">
         <el-col :span="1.5">
-          <el-button type="primary" plain icon="Plus" data-testid="visa-add-button" @click="handleAdd" v-hasPermi="['docman:project:edit']">
-            新建签证单
+          <el-button type="primary" plain icon="Plus" data-testid="drawing-add-button" @click="handleAdd" v-hasPermi="['docman:project:edit']">
+            新建图纸
           </el-button>
         </el-col>
       </el-row>
 
-      <el-table v-loading="loading" :data="pagedRows" border stripe :row-key="(row) => row.id" data-testid="visa-table">
-        <el-table-column prop="reason" label="签证原因" min-width="180" />
-        <el-table-column prop="contentBasis" label="内容依据" min-width="220" show-overflow-tooltip />
-        <el-table-column prop="amount" label="金额" width="120" align="center" />
-        <el-table-column prop="visaDate" label="签证日期" width="180" align="center" />
+      <el-table v-loading="loading" :data="pagedRows" border stripe :row-key="(row) => row.id" data-testid="drawing-table">
+        <el-table-column prop="drawingCode" label="图号" min-width="140" />
+        <el-table-column prop="orderSerialNo" label="订单流水号" min-width="160" />
+        <el-table-column prop="workContent" label="工作内容" min-width="220" show-overflow-tooltip />
         <el-table-column label="计入项目" width="100" align="center">
           <template #default="{ row }">
             <el-tag :type="row.includeInProject ? 'success' : 'info'" size="small">
@@ -54,43 +53,27 @@
         @pagination="handlePageChange"
       />
 
-      <el-dialog v-model="dialog.visible" :title="dialog.title" width="520px" append-to-body data-testid="visa-dialog">
-        <el-form ref="visaFormRef" :model="form" label-width="100px" data-testid="visa-form">
-          <el-form-item label="签证原因">
-            <el-input v-model="form.reason" placeholder="请输入签证原因" data-testid="visa-form-reason" />
+      <el-dialog v-model="dialog.visible" :title="dialog.title" width="520px" append-to-body data-testid="drawing-dialog">
+        <el-form ref="drawingFormRef" :model="form" label-width="100px" data-testid="drawing-form">
+          <el-form-item label="图号">
+            <el-input v-model="form.drawingCode" placeholder="请输入图号" data-testid="drawing-form-code" />
           </el-form-item>
-          <el-form-item label="内容依据">
-            <el-input
-              v-model="form.contentBasis"
-              type="textarea"
-              :rows="4"
-              placeholder="请输入签证内容及依据"
-              data-testid="visa-form-content-basis"
-            />
+          <el-form-item label="订单流水号">
+            <el-input v-model="form.orderSerialNo" placeholder="请输入订单流水号" data-testid="drawing-form-order" />
           </el-form-item>
-          <el-form-item label="金额">
-            <el-input-number v-model="form.amount" :precision="2" :min="0" style="width: 100%" data-testid="visa-form-amount" />
-          </el-form-item>
-          <el-form-item label="签证日期">
-            <el-date-picker
-              v-model="form.visaDate"
-              type="date"
-              placeholder="选择签证日期"
-              value-format="YYYY-MM-DD HH:mm:ss"
-              style="width: 100%"
-              data-testid="visa-form-date"
-            />
+          <el-form-item label="工作内容">
+            <el-input v-model="form.workContent" type="textarea" :rows="4" placeholder="请输入工作内容" data-testid="drawing-form-content" />
           </el-form-item>
           <el-form-item label="计入项目">
             <el-switch v-model="form.includeInProject" />
           </el-form-item>
           <el-form-item label="备注">
-            <el-input v-model="form.remark" type="textarea" :rows="3" placeholder="请输入备注内容" data-testid="visa-form-remark" />
+            <el-input v-model="form.remark" type="textarea" :rows="3" placeholder="请输入备注内容" data-testid="drawing-form-remark" />
           </el-form-item>
         </el-form>
         <template #footer>
           <div class="dialog-footer">
-            <el-button type="primary" data-testid="visa-submit-button" @click="submitForm">确 定</el-button>
+            <el-button type="primary" data-testid="drawing-submit-button" @click="submitForm">确 定</el-button>
             <el-button @click="cancel">取 消</el-button>
           </div>
         </template>
@@ -103,8 +86,8 @@
 import { computed, onMounted, reactive, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { ElMessage, ElMessageBox } from 'element-plus';
-import { deleteProjectVisa, listProjectVisas, saveProjectVisa } from '@/api/docman/visa';
-import type { DocProjectVisa, DocProjectVisaForm } from '@/api/docman/types';
+import { deleteProjectDrawing, listProjectDrawings, saveProjectDrawing } from '@/api/docman/drawing';
+import type { DocProjectDrawing, DocProjectDrawingForm } from '@/api/docman/types';
 import { handleApiError } from '@/utils/error';
 import { paginateRows, resolvePathProjectId } from '../inputLine/inputLine.util';
 
@@ -114,82 +97,84 @@ const router = useRouter();
 const projectId = computed(() => resolvePathProjectId(route.params.projectId));
 const hasProjectId = computed(() => Boolean(projectId.value));
 
-const visaList = ref<DocProjectVisa[]>([]);
-const total = ref(0);
-const loading = ref(true);
+const loading = ref(false);
 const loadError = ref('');
-const visaFormRef = ref();
+const rows = ref<DocProjectDrawing[]>([]);
+const total = ref(0);
+const drawingFormRef = ref();
 
 const dialog = reactive<DialogOption>({
   visible: false,
   title: ''
 });
 
-const initFormData: DocProjectVisaForm = {
-  id: undefined,
-  projectId: '',
-  reason: '',
-  contentBasis: '',
-  amount: undefined,
-  visaDate: '',
-  includeInProject: true,
-  remark: ''
-};
-
-const form = reactive<DocProjectVisaForm>({ ...initFormData });
-
 const queryParams = reactive({
   pageNum: 1,
   pageSize: 10
 });
 
-const pagedRows = computed(() => paginateRows(visaList.value, queryParams.pageNum, queryParams.pageSize));
+const initFormData: DocProjectDrawingForm = {
+  id: undefined,
+  projectId: '',
+  drawingCode: '',
+  orderSerialNo: '',
+  workContent: '',
+  includeInProject: true,
+  remark: ''
+};
+
+const form = reactive<DocProjectDrawingForm>({ ...initFormData });
+const pagedRows = computed(() => paginateRows(rows.value, queryParams.pageNum, queryParams.pageSize));
 
 async function getList() {
   if (!hasProjectId.value) {
-    visaList.value = [];
+    rows.value = [];
     total.value = 0;
     return;
   }
   loading.value = true;
   loadError.value = '';
   try {
-    const res = await listProjectVisas(projectId.value!);
-    visaList.value = res.data || [];
-    total.value = visaList.value.length;
+    const res = await listProjectDrawings(projectId.value!);
+    rows.value = res.data || [];
+    total.value = rows.value.length;
   } catch (error) {
-    visaList.value = [];
+    rows.value = [];
     total.value = 0;
-    loadError.value = handleApiError(error, '签证列表加载失败');
+    loadError.value = handleApiError(error, '图纸列表加载失败');
   } finally {
     loading.value = false;
   }
 }
 
 function handlePageChange() {
-  total.value = visaList.value.length;
+  total.value = rows.value.length;
 }
 
 function handleAdd() {
   reset();
   dialog.visible = true;
-  dialog.title = '新建签证单';
+  dialog.title = '新建图纸';
 }
 
-function handleUpdate(row: DocProjectVisa) {
+function handleUpdate(row: DocProjectDrawing) {
   reset();
   Object.assign(form, {
     id: row.id,
     projectId: projectId.value || '',
-    reason: row.reason || '',
-    contentBasis: row.contentBasis || '',
-    amount: row.amount,
-    visaDate: row.visaDate || '',
+    drawingCode: row.drawingCode || '',
+    orderSerialNo: row.orderSerialNo || '',
+    workContent: row.workContent || '',
     includeInProject: row.includeInProject ?? true,
     remark: row.remark || ''
   });
   dialog.visible = true;
-  dialog.title = '编辑签证单';
+  dialog.title = '编辑图纸';
+}
+
+function reset() {
+  Object.assign(form, { ...initFormData, projectId: projectId.value || '' });
+  drawingFormRef.value?.resetFields?.();
 }
 
 function cancel() {
@@ -197,37 +182,32 @@ function cancel() {
   reset();
 }
 
-function reset() {
-  Object.assign(form, { ...initFormData, projectId: projectId.value || '' });
-  visaFormRef.value?.resetFields();
-}
-
 async function submitForm() {
   if (!hasProjectId.value) {
     return;
   }
   try {
-    await saveProjectVisa({ ...form, projectId: projectId.value });
+    await saveProjectDrawing({ ...form, projectId: projectId.value });
     ElMessage.success(form.id ? '修改成功' : '新增成功');
     dialog.visible = false;
     await getList();
   } catch (error) {
-    handleApiError(error, '签证保存失败');
+    handleApiError(error, '图纸保存失败');
   }
 }
 
-function handleDelete(id: number | undefined) {
+function handleDelete(id?: number) {
   if (id == undefined) {
     return;
   }
-  ElMessageBox.confirm('是否确认删除该签证单？', '提示', { type: 'warning' })
+  ElMessageBox.confirm('是否确认删除该图纸记录？', '提示', { type: 'warning' })
     .then(async () => {
       try {
-        await deleteProjectVisa([id]);
+        await deleteProjectDrawing([id]);
         ElMessage.success('删除成功');
         await getList();
       } catch (error) {
-        handleApiError(error, '签证删除失败');
+        handleApiError(error, '图纸删除失败');
       }
     })
     .catch(() => undefined);

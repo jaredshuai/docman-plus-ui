@@ -82,6 +82,7 @@
               <el-dropdown-menu>
                 <el-dropdown-item command="workspace" v-hasPermi="['docman:project:query']">项目工作台</el-dropdown-item>
                 <el-dropdown-item command="balance" v-hasPermi="['docman:project:query']">项目经理平料</el-dropdown-item>
+                <el-dropdown-item command="drawing" v-hasPermi="['docman:project:query']">图纸录入</el-dropdown-item>
                 <el-dropdown-item command="visa">签证单</el-dropdown-item>
                 <el-dropdown-item command="archive" v-if="row.status === 'active'" v-hasPermi="['docman:archive:execute']">归档</el-dropdown-item>
                 <el-dropdown-item command="process" v-hasPermi="['docman:process:query']">流程</el-dropdown-item>
@@ -183,8 +184,9 @@
         </el-row>
       </el-form>
       <div v-if="form.id" class="quick-action-bar" style="margin: 16px 0; display: flex; gap: 12px; padding-top: 16px; border-top: 1px solid #ebeef5">
-        <el-button type="success" plain icon="Plus" @click="handleAddWorkload">新增工作量</el-button>
+        <el-button type="success" plain icon="Plus" @click="handleAddDrawing">图纸录入</el-button>
         <el-button type="warning" plain icon="Plus" @click="handleAddVisa">新增签证单</el-button>
+        <el-button type="info" plain icon="EditPen" @click="handleAddWorkload">项目工作台</el-button>
       </div>
       <template #footer>
         <div class="dialog-footer">
@@ -371,6 +373,13 @@ function handleAddWorkload() {
   }
 }
 
+/** 新增图纸按钮 */
+function handleAddDrawing() {
+  if (form.value.id) {
+    handleDrawing(form.value.id);
+  }
+}
+
 /** 新增签证单按钮 */
 function handleAddVisa() {
   if (form.value.id) {
@@ -428,6 +437,9 @@ function handleDelete(id: number) {
 function handleDocuments(id: number) {
   router.push({ path: '/docman/document', query: { projectId: String(id) } });
 }
+function handleDrawing(id: number) {
+  router.push(`/docman/drawing/${id}`);
+}
 function handleWorkspace(id: number) {
   router.push({ path: '/docman/workspace', query: { projectId: String(id) } });
 }
@@ -453,6 +465,9 @@ function handleCommand(command: string, row: DocProject) {
       break;
     case 'balance':
       handleBalance(row.id);
+      break;
+    case 'drawing':
+      handleDrawing(row.id);
       break;
     case 'visa':
       router.push(`/docman/visa/${row.id}`);

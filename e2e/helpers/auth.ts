@@ -43,7 +43,9 @@ export const DOCMAN_URLS = {
   archive: resolveAppUrl('/docman/archive'),
   plugin: resolveAppUrl('/docman/plugin'),
   member: resolveAppUrl('/docman/member'),
-  nodeDeadline: resolveAppUrl('/docman/nodedeadline')
+  nodeDeadline: resolveAppUrl('/docman/nodedeadline'),
+  drawing: resolveAppUrl('/docman/drawing'),
+  visa: resolveAppUrl('/docman/visa')
 };
 
 export const DEMO_PROJECT_ID = 9100001;
