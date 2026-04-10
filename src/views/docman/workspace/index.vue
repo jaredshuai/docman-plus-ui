@@ -423,6 +423,14 @@ async function handleCompleteTask(taskRuntimeId: number) {
 
 function handleTaskAction(task: { id: number; taskCode?: string; taskType?: string }) {
   if (isRedirectTask(task)) {
+    if (task.taskCode === 'drawing_fill') {
+      drawingDialog.open = true;
+      return;
+    }
+    if (task.taskCode === 'visa_fill') {
+      visaDialog.open = true;
+      return;
+    }
     if (task.taskCode === 'workload_fill') {
       handleOpenWorkload();
       return;
