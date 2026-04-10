@@ -91,10 +91,10 @@
                     type="primary"
                     :loading="taskActionLoadingId === row.id"
                     :disabled="row.status === 'completed'"
-                    @click="handleCompleteTask(row.id)"
+                    @click="handleTaskAction(row)"
                     v-hasPermi="['docman:project:edit']"
                   >
-                    完成
+                    {{ resolvePluginTaskLabel(row) }}
                   </el-button>
                 </template>
               </el-table-column>
@@ -331,7 +331,7 @@ import type {
   DocProjectVisaForm,
   DocProjectWorkspace
 } from '@/api/docman/types';
-import { resolvePluginTaskLabel, summarizeWorkload } from './workspace.util';
+import { isRedirectTask, resolvePluginTaskLabel, summarizeWorkload } from './workspace.util';
 
 const route = useRoute();
 const router = useRouter();
@@ -421,6 +421,20 @@ async function handleCompleteTask(taskRuntimeId: number) {
   }
 }
 
+function handleTaskAction(task: { id: number; taskCode?: string; taskType?: string }) {
+  if (isRedirectTask(task)) {
+    if (task.taskCode === 'workload_fill') {
+      handleOpenWorkload();
+      return;
+    }
+    if (task.taskCode === 'manager_adjust') {
+      handleOpenBalance();
+      return;
+    }
+  }
+  handleCompleteTask(task.id);
+}
+
 async function handleTriggerTask(taskId: number) {
   if (!hasProjectId.value) return;
   taskActionLoadingId.value = taskId;
@@ -487,6 +501,11 @@ function handleDownloadArtifact(id?: number) {
 function handleOpenWorkload() {
   if (!hasProjectId.value) return;
   router.push(`/docman/workload/${projectId.value}`);
+}
+
+function handleOpenBalance() {
+  if (!hasProjectId.value) return;
+  router.push({ path: '/docman/balance', query: { projectId: String(projectId.value) } });
 }
 
 function resolveArtifactTagType(status?: string) {

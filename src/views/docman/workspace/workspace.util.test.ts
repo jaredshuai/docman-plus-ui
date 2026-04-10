@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { DocProjectAddRecord, DocProjectNodeTaskRuntime } from '@/api/docman/types';
-import { hasEstimateTask, hasExportTask, resolvePluginTaskLabel, summarizeWorkload } from './workspace.util';
+import { hasEstimateTask, hasExportTask, isRedirectTask, resolvePluginTaskLabel, summarizeWorkload } from './workspace.util';
 
 describe('workspace util', () => {
   it('detects estimate task by completion rule or task code instead of plugin id', () => {
@@ -52,7 +52,18 @@ describe('workspace util', () => {
       '触发估算'
     );
     expect(resolvePluginTaskLabel({ taskType: 'plugin_run', taskCode: 'export_run', completionRule: '' })).toBe('导出文本');
+    expect(resolvePluginTaskLabel({ taskType: 'form_fill', taskCode: 'workload_fill', completionRule: 'workload_exists' })).toBe('去录入');
+    expect(resolvePluginTaskLabel({ taskType: 'manager_adjust', taskCode: 'manager_adjust', completionRule: 'balance_adjustment_exists' })).toBe(
+      '去平料'
+    );
     expect(resolvePluginTaskLabel({ taskType: 'review_confirm', taskCode: 'project_info_confirm', completionRule: '' })).toBe('完成');
+  });
+
+  it('marks workload and manager adjust tasks as redirect actions', () => {
+    expect(isRedirectTask({ taskType: 'form_fill', taskCode: 'workload_fill' })).toBe(true);
+    expect(isRedirectTask({ taskType: 'manager_adjust', taskCode: 'manager_adjust' })).toBe(true);
+    expect(isRedirectTask({ taskType: 'review_confirm', taskCode: 'project_info_confirm' })).toBe(false);
+    expect(isRedirectTask({ taskType: 'plugin_run', taskCode: 'estimate_run' })).toBe(false);
   });
 
   it('summarizes workload records for workspace overview', () => {

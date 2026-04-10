@@ -2,6 +2,8 @@ import type { DocProjectAddRecord, DocProjectNodeTaskRuntime } from '@/api/docma
 
 const ESTIMATE_TASK_CODE = 'estimate_run';
 const EXPORT_TASK_CODE = 'export_run';
+const WORKLOAD_TASK_CODE = 'workload_fill';
+const MANAGER_ADJUST_TASK_CODE = 'manager_adjust';
 const ESTIMATE_COMPLETION_RULE = 'estimate_snapshot_exists';
 
 export function hasEstimateTask(tasks: DocProjectNodeTaskRuntime[] | undefined): boolean {
@@ -19,6 +21,12 @@ export function hasExportTask(tasks: DocProjectNodeTaskRuntime[] | undefined): b
 
 export function resolvePluginTaskLabel(task: Pick<DocProjectNodeTaskRuntime, 'taskType' | 'taskCode' | 'completionRule'>): string {
   if (task.taskType !== 'plugin_run') {
+    if (task.taskCode === WORKLOAD_TASK_CODE) {
+      return '去录入';
+    }
+    if (task.taskCode === MANAGER_ADJUST_TASK_CODE) {
+      return '去平料';
+    }
     return '完成';
   }
   if (task.completionRule === ESTIMATE_COMPLETION_RULE || task.taskCode === ESTIMATE_TASK_CODE) {
@@ -28,6 +36,10 @@ export function resolvePluginTaskLabel(task: Pick<DocProjectNodeTaskRuntime, 'ta
     return '导出文本';
   }
   return '触发插件';
+}
+
+export function isRedirectTask(task: Pick<DocProjectNodeTaskRuntime, 'taskCode' | 'taskType'>): boolean {
+  return task.taskType !== 'plugin_run' && [WORKLOAD_TASK_CODE, MANAGER_ADJUST_TASK_CODE].includes(task.taskCode || '');
 }
 
 export interface WorkloadSummary {
