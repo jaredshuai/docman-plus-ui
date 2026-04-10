@@ -225,6 +225,7 @@ export interface DocProjectWorkspace {
   drawingCount: number;
   visaCount: number;
   latestEstimateSnapshot?: DocProjectEstimateSnapshot;
+  latestExportArtifact?: DocDocumentRecord;
 }
 
 export interface DocProjectBalanceAdjustment {

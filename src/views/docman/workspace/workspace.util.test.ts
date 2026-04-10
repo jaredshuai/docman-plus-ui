@@ -1,54 +1,18 @@
 import { describe, expect, it } from 'vitest';
-import type { DocDocumentRecord, DocProjectNodeTaskRuntime } from '@/api/docman/types';
-import { ESTIMATE_PLUGIN_ID, EXPORT_PLUGIN_ID, findLatestGeneratedPluginArtifact, hasPluginTask, resolvePluginTaskLabel } from './workspace.util';
+import type { DocProjectNodeTaskRuntime } from '@/api/docman/types';
+import { hasEstimateTask, hasExportTask, resolvePluginTaskLabel } from './workspace.util';
 
 describe('workspace util', () => {
-  it('finds latest generated export artifact', () => {
-    const documents: DocDocumentRecord[] = [
-      {
-        id: 1,
-        projectId: 1,
-        sourceType: 'plugin',
-        fileName: 'old.txt',
-        nasPath: '/old',
-        pluginId: EXPORT_PLUGIN_ID,
-        status: 'generated',
-        generatedAt: '2026-04-08 10:00:00'
-      },
-      {
-        id: 2,
-        projectId: 1,
-        sourceType: 'plugin',
-        fileName: 'new.txt',
-        nasPath: '/new',
-        pluginId: EXPORT_PLUGIN_ID,
-        status: 'generated',
-        generatedAt: '2026-04-08 11:00:00'
-      },
-      {
-        id: 3,
-        projectId: 1,
-        sourceType: 'plugin',
-        fileName: 'ignore.txt',
-        nasPath: '/ignore',
-        pluginId: EXPORT_PLUGIN_ID,
-        status: 'obsolete',
-        generatedAt: '2026-04-08 12:00:00'
-      }
-    ];
-
-    expect(findLatestGeneratedPluginArtifact(documents, EXPORT_PLUGIN_ID)?.id).toBe(2);
-  });
-
-  it('detects pending plugin task by plugin id', () => {
+  it('detects estimate task by completion rule or task code instead of plugin id', () => {
     const tasks: DocProjectNodeTaskRuntime[] = [
       {
         id: 1,
         projectId: 1,
         nodeCode: 'initial_estimate',
-        taskCode: 'estimate_run',
+        taskCode: 'custom_estimate_plugin',
         taskType: 'plugin_run',
-        pluginCodes: ESTIMATE_PLUGIN_ID,
+        completionRule: 'estimate_snapshot_exists',
+        pluginCodes: 'telecom-estimate-v2',
         status: 'pending'
       },
       {
@@ -57,18 +21,37 @@ describe('workspace util', () => {
         nodeCode: 'export_text',
         taskCode: 'export_run',
         taskType: 'plugin_run',
-        pluginCodes: EXPORT_PLUGIN_ID,
+        pluginCodes: 'telecom-export-text-v2',
         status: 'completed'
       }
     ];
 
-    expect(hasPluginTask(tasks, ESTIMATE_PLUGIN_ID)).toBe(true);
-    expect(hasPluginTask(tasks, EXPORT_PLUGIN_ID)).toBe(false);
+    expect(hasEstimateTask(tasks)).toBe(true);
+    expect(hasExportTask(tasks)).toBe(false);
   });
 
-  it('resolves task action label by plugin type', () => {
-    expect(resolvePluginTaskLabel({ taskType: 'plugin_run', pluginCodes: ESTIMATE_PLUGIN_ID })).toBe('触发估算');
-    expect(resolvePluginTaskLabel({ taskType: 'plugin_run', pluginCodes: EXPORT_PLUGIN_ID })).toBe('导出文本');
-    expect(resolvePluginTaskLabel({ taskType: 'review_confirm', pluginCodes: '' })).toBe('完成');
+  it('detects export task by task code instead of plugin id', () => {
+    const tasks: DocProjectNodeTaskRuntime[] = [
+      {
+        id: 3,
+        projectId: 1,
+        nodeCode: 'export_text',
+        taskCode: 'export_run',
+        taskType: 'plugin_run',
+        pluginCodes: 'real-export-plugin',
+        status: 'pending'
+      }
+    ];
+
+    expect(hasExportTask(tasks)).toBe(true);
+  });
+
+  it('resolves task action label by task semantics', () => {
+    expect(resolvePluginTaskLabel({ taskType: 'plugin_run', taskCode: 'estimate_run', completionRule: '' })).toBe('触发估算');
+    expect(resolvePluginTaskLabel({ taskType: 'plugin_run', taskCode: 'custom_plugin', completionRule: 'estimate_snapshot_exists' })).toBe(
+      '触发估算'
+    );
+    expect(resolvePluginTaskLabel({ taskType: 'plugin_run', taskCode: 'export_run', completionRule: '' })).toBe('导出文本');
+    expect(resolvePluginTaskLabel({ taskType: 'review_confirm', taskCode: 'project_info_confirm', completionRule: '' })).toBe('完成');
   });
 });

@@ -152,7 +152,9 @@
                   {{ latestExportArtifact.fileName }}
                 </el-descriptions-item>
                 <el-descriptions-item label="状态">
-                  {{ latestExportArtifact.status }}
+                  <el-tag :type="resolveArtifactTagType(latestExportArtifact.status)">
+                    {{ latestExportArtifact.status || '-' }}
+                  </el-tag>
                 </el-descriptions-item>
                 <el-descriptions-item label="生成时间">
                   {{ latestExportArtifact.generatedAt || latestExportArtifact.createTime || '-' }}
@@ -161,8 +163,21 @@
                   {{ latestExportArtifact.pluginId || '-' }}
                 </el-descriptions-item>
               </el-descriptions>
+              <el-alert
+                v-if="latestExportArtifact.status && latestExportArtifact.status !== 'generated'"
+                :title="`当前最新产物状态为 ${latestExportArtifact.status}，可进入文档中心查看完整处理记录。`"
+                type="warning"
+                :closable="false"
+                style="margin-top: 12px"
+              />
               <el-space style="margin-top: 12px" wrap>
-                <el-button type="primary" plain @click="handleDownloadArtifact(latestExportArtifact.id)" v-hasPermi="['docman:document:download']">
+                <el-button
+                  v-if="latestExportArtifact.status === 'generated'"
+                  type="primary"
+                  plain
+                  @click="handleDownloadArtifact(latestExportArtifact.id)"
+                  v-hasPermi="['docman:document:download']"
+                >
                   下载产物
                 </el-button>
                 <el-button plain @click="handleOpenDocumentCenter" v-hasPermi="['docman:document:list']">查看全部产物</el-button>
@@ -270,18 +285,11 @@ import {
   triggerProjectExport,
   triggerProjectTaskPlugins
 } from '@/api/docman/workspace';
-import { downloadDocument, listDocument } from '@/api/docman/document';
+import { downloadDocument } from '@/api/docman/document';
 import { listProjectDrawings, saveProjectDrawing } from '@/api/docman/drawing';
 import { listProjectVisas, saveProjectVisa } from '@/api/docman/visa';
-import type {
-  DocDocumentRecord,
-  DocProjectDrawing,
-  DocProjectDrawingForm,
-  DocProjectVisa,
-  DocProjectVisaForm,
-  DocProjectWorkspace
-} from '@/api/docman/types';
-import { ESTIMATE_PLUGIN_ID, EXPORT_PLUGIN_ID, findLatestGeneratedPluginArtifact, hasPluginTask, resolvePluginTaskLabel } from './workspace.util';
+import type { DocProjectDrawing, DocProjectDrawingForm, DocProjectVisa, DocProjectVisaForm, DocProjectWorkspace } from '@/api/docman/types';
+import { hasEstimateTask, hasExportTask, resolvePluginTaskLabel } from './workspace.util';
 
 const route = useRoute();
 const router = useRouter();
@@ -292,7 +300,6 @@ const loadError = ref('');
 const workspace = ref<DocProjectWorkspace>();
 const drawings = ref<DocProjectDrawing[]>([]);
 const visas = ref<DocProjectVisa[]>([]);
-const documents = ref<DocDocumentRecord[]>([]);
 const taskActionLoadingId = ref<number>();
 const estimateLoading = ref(false);
 const exportLoading = ref(false);
@@ -320,31 +327,28 @@ const visaForm = reactive<DocProjectVisaForm>({
 });
 
 const latestEstimateSnapshot = computed(() => workspace.value?.latestEstimateSnapshot);
-const latestExportArtifact = computed(() => findLatestGeneratedPluginArtifact(documents.value, EXPORT_PLUGIN_ID));
-const canTriggerEstimate = computed(() => hasPluginTask(workspace.value?.currentNodeTasks, ESTIMATE_PLUGIN_ID));
-const canTriggerExport = computed(() => hasPluginTask(workspace.value?.currentNodeTasks, EXPORT_PLUGIN_ID));
+const latestExportArtifact = computed(() => workspace.value?.latestExportArtifact);
+const canTriggerEstimate = computed(() => hasEstimateTask(workspace.value?.currentNodeTasks));
+const canTriggerExport = computed(() => hasExportTask(workspace.value?.currentNodeTasks));
 
 async function loadAll() {
   if (!hasProjectId.value) {
     workspace.value = undefined;
     drawings.value = [];
     visas.value = [];
-    documents.value = [];
     return;
   }
   loading.value = true;
   loadError.value = '';
   try {
-    const [workspaceRes, drawingRes, visaRes, documentRes] = await Promise.all([
+    const [workspaceRes, drawingRes, visaRes] = await Promise.all([
       getProjectWorkspace(projectId.value),
       listProjectDrawings(projectId.value),
-      listProjectVisas(projectId.value),
-      listDocument(projectId.value, { pageNum: 1, pageSize: 200 })
+      listProjectVisas(projectId.value)
     ]);
     workspace.value = workspaceRes.data;
     drawings.value = drawingRes.data;
     visas.value = visaRes.data;
-    documents.value = documentRes.rows || [];
   } catch (error) {
     loadError.value = handleApiError(error, '工作台加载失败');
   } finally {
@@ -427,6 +431,20 @@ function handleOpenDocumentCenter() {
 function handleDownloadArtifact(id?: number) {
   if (!id) return;
   downloadDocument(id);
+}
+
+function resolveArtifactTagType(status?: string) {
+  switch (status) {
+    case 'generated':
+    case 'archived':
+      return 'success';
+    case 'failed':
+      return 'danger';
+    case 'running':
+      return 'warning';
+    default:
+      return 'info';
+  }
 }
 
 async function handleSaveDrawing() {
