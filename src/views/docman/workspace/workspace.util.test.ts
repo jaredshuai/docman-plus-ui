@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import type { DocProjectNodeTaskRuntime } from '@/api/docman/types';
-import { hasEstimateTask, hasExportTask, resolvePluginTaskLabel } from './workspace.util';
+import type { DocProjectAddRecord, DocProjectNodeTaskRuntime } from '@/api/docman/types';
+import { hasEstimateTask, hasExportTask, resolvePluginTaskLabel, summarizeWorkload } from './workspace.util';
 
 describe('workspace util', () => {
   it('detects estimate task by completion rule or task code instead of plugin id', () => {
@@ -53,5 +53,34 @@ describe('workspace util', () => {
     );
     expect(resolvePluginTaskLabel({ taskType: 'plugin_run', taskCode: 'export_run', completionRule: '' })).toBe('导出文本');
     expect(resolvePluginTaskLabel({ taskType: 'review_confirm', taskCode: 'project_info_confirm', completionRule: '' })).toBe('完成');
+  });
+
+  it('summarizes workload records for workspace overview', () => {
+    const records: DocProjectAddRecord[] = [
+      {
+        id: 1,
+        projectId: 1,
+        enable: true,
+        estimatedPrice: 120,
+        details: [
+          { projectId: 1, name: '杆路整治' },
+          { projectId: 1, alias: '光缆布放' }
+        ]
+      },
+      {
+        id: 2,
+        projectId: 1,
+        enable: false,
+        estimatedPrice: 80,
+        details: []
+      }
+    ];
+
+    expect(summarizeWorkload(records)).toEqual({
+      totalRecords: 2,
+      enabledRecords: 1,
+      totalEstimatedPrice: 200,
+      latestDetailSummary: '杆路整治、光缆布放'
+    });
   });
 });

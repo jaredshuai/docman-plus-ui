@@ -26,6 +26,7 @@
 
         <div class="mt16" v-if="workspace">
           <el-space wrap>
+            <el-button type="warning" plain @click="handleOpenWorkload" v-hasPermi="['docman:project:query']">工作量录入</el-button>
             <el-button type="primary" @click="drawingDialog.open = true" v-hasPermi="['docman:project:edit']">录入图纸</el-button>
             <el-button type="success" @click="visaDialog.open = true" v-hasPermi="['docman:project:edit']">录入签证</el-button>
             <el-button
@@ -197,6 +198,31 @@
       </el-row>
 
       <el-row :gutter="16" style="margin-top: 16px">
+        <el-col :span="24">
+          <el-card>
+            <template #header>工作量汇总</template>
+            <el-descriptions :column="4" border size="small">
+              <el-descriptions-item label="记录数">
+                {{ workloadSummary.totalRecords }}
+              </el-descriptions-item>
+              <el-descriptions-item label="启用记录">
+                {{ workloadSummary.enabledRecords }}
+              </el-descriptions-item>
+              <el-descriptions-item label="预估价格合计">
+                {{ workloadSummary.totalEstimatedPrice || '-' }}
+              </el-descriptions-item>
+              <el-descriptions-item label="最新明细">
+                {{ workloadSummary.latestDetailSummary || '-' }}
+              </el-descriptions-item>
+            </el-descriptions>
+            <el-space style="margin-top: 12px" wrap>
+              <el-button type="primary" plain @click="handleOpenWorkload" v-hasPermi="['docman:project:query']">进入工作量录入</el-button>
+            </el-space>
+          </el-card>
+        </el-col>
+      </el-row>
+
+      <el-row :gutter="16" style="margin-top: 16px">
         <el-col :span="12">
           <el-card>
             <template #header>图纸录入</template>
@@ -285,6 +311,7 @@ import { useRoute, useRouter } from 'vue-router';
 import { ElMessage } from 'element-plus';
 import { handleApiError } from '@/utils/error';
 import { useRouteProjectId } from '@/hooks/useRouteProjectId';
+import { listProjectAddRecords } from '@/api/docman/addRecord';
 import {
   advanceProjectNode,
   completeProjectTask,
@@ -296,8 +323,15 @@ import {
 import { downloadDocument } from '@/api/docman/document';
 import { listProjectDrawings, saveProjectDrawing } from '@/api/docman/drawing';
 import { listProjectVisas, saveProjectVisa } from '@/api/docman/visa';
-import type { DocProjectDrawing, DocProjectDrawingForm, DocProjectVisa, DocProjectVisaForm, DocProjectWorkspace } from '@/api/docman/types';
-import { resolvePluginTaskLabel } from './workspace.util';
+import type {
+  DocProjectAddRecord,
+  DocProjectDrawing,
+  DocProjectDrawingForm,
+  DocProjectVisa,
+  DocProjectVisaForm,
+  DocProjectWorkspace
+} from '@/api/docman/types';
+import { resolvePluginTaskLabel, summarizeWorkload } from './workspace.util';
 
 const route = useRoute();
 const router = useRouter();
@@ -306,6 +340,7 @@ const { projectId, hasProjectId } = useRouteProjectId(route);
 const loading = ref(false);
 const loadError = ref('');
 const workspace = ref<DocProjectWorkspace>();
+const workloadRecords = ref<DocProjectAddRecord[]>([]);
 const drawings = ref<DocProjectDrawing[]>([]);
 const visas = ref<DocProjectVisa[]>([]);
 const taskActionLoadingId = ref<number>();
@@ -342,10 +377,12 @@ const showEstimateTrigger = computed(() => canTriggerEstimate.value || Boolean(e
 const canTriggerExport = computed(() => Boolean(workspace.value?.exportTriggerReady));
 const exportTriggerBlockedReason = computed(() => workspace.value?.exportTriggerBlockedReason || '');
 const showExportTrigger = computed(() => canTriggerExport.value || Boolean(exportTriggerBlockedReason.value));
+const workloadSummary = computed(() => summarizeWorkload(workloadRecords.value));
 
 async function loadAll() {
   if (!hasProjectId.value) {
     workspace.value = undefined;
+    workloadRecords.value = [];
     drawings.value = [];
     visas.value = [];
     return;
@@ -353,12 +390,14 @@ async function loadAll() {
   loading.value = true;
   loadError.value = '';
   try {
-    const [workspaceRes, drawingRes, visaRes] = await Promise.all([
+    const [workspaceRes, workloadRes, drawingRes, visaRes] = await Promise.all([
       getProjectWorkspace(projectId.value),
+      listProjectAddRecords(projectId.value),
       listProjectDrawings(projectId.value),
       listProjectVisas(projectId.value)
     ]);
     workspace.value = workspaceRes.data;
+    workloadRecords.value = workloadRes.data || [];
     drawings.value = drawingRes.data;
     visas.value = visaRes.data;
   } catch (error) {
@@ -443,6 +482,11 @@ function handleOpenDocumentCenter() {
 function handleDownloadArtifact(id?: number) {
   if (!id) return;
   downloadDocument(id);
+}
+
+function handleOpenWorkload() {
+  if (!hasProjectId.value) return;
+  router.push(`/docman/workload/${projectId.value}`);
 }
 
 function resolveArtifactTagType(status?: string) {

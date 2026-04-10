@@ -1,4 +1,4 @@
-import type { DocProjectNodeTaskRuntime } from '@/api/docman/types';
+import type { DocProjectAddRecord, DocProjectNodeTaskRuntime } from '@/api/docman/types';
 
 const ESTIMATE_TASK_CODE = 'estimate_run';
 const EXPORT_TASK_CODE = 'export_run';
@@ -28,4 +28,25 @@ export function resolvePluginTaskLabel(task: Pick<DocProjectNodeTaskRuntime, 'ta
     return '导出文本';
   }
   return '触发插件';
+}
+
+export interface WorkloadSummary {
+  totalRecords: number;
+  enabledRecords: number;
+  totalEstimatedPrice: number;
+  latestDetailSummary: string;
+}
+
+export function summarizeWorkload(records: DocProjectAddRecord[] | undefined): WorkloadSummary {
+  const safeRecords = records ?? [];
+  return {
+    totalRecords: safeRecords.length,
+    enabledRecords: safeRecords.filter((item) => item.enable !== false).length,
+    totalEstimatedPrice: safeRecords.reduce((sum, item) => sum + Number(item.estimatedPrice ?? 0), 0),
+    latestDetailSummary:
+      safeRecords[0]?.details
+        ?.map((detail) => detail.name || detail.alias)
+        .filter(Boolean)
+        .join('、') || ''
+  };
 }
