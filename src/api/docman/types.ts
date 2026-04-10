@@ -223,7 +223,9 @@ export interface DocProjectWorkspace {
   nodes: DocWorkflowTemplateNode[];
   currentNodeTasks: DocProjectNodeTaskRuntime[];
   drawingCount: number;
+  includedDrawingCount?: number;
   visaCount: number;
+  includedVisaCount?: number;
   latestEstimateSnapshot?: DocProjectEstimateSnapshot;
   latestExportArtifact?: DocDocumentRecord;
 }

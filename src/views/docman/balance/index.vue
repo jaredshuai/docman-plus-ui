@@ -22,8 +22,12 @@
           <el-descriptions-item label="项目名称">{{ workspace.projectName }}</el-descriptions-item>
           <el-descriptions-item label="当前节点">{{ workspace.currentNodeName }}</el-descriptions-item>
           <el-descriptions-item label="运行状态">{{ workspace.runtimeStatus }}</el-descriptions-item>
-          <el-descriptions-item label="图纸数量">{{ workspace.drawingCount }}</el-descriptions-item>
-          <el-descriptions-item label="签证数量">{{ workspace.visaCount }}</el-descriptions-item>
+          <el-descriptions-item label="图纸数量 / 计入口径">
+            {{ workspace.drawingCount }} / {{ workspace.includedDrawingCount ?? workspace.drawingCount }}
+          </el-descriptions-item>
+          <el-descriptions-item label="签证数量 / 计入口径">
+            {{ workspace.visaCount }} / {{ workspace.includedVisaCount ?? workspace.visaCount }}
+          </el-descriptions-item>
           <el-descriptions-item label="项目类型">{{ workspace.projectTypeCode || '-' }}</el-descriptions-item>
         </el-descriptions>
       </el-card>
@@ -36,8 +40,12 @@
               <el-descriptions :column="2" border size="small">
                 <el-descriptions-item label="估算金额">{{ estimateSnapshot.estimateAmount ?? '-' }}</el-descriptions-item>
                 <el-descriptions-item label="估算状态">{{ estimateSnapshot.status || '-' }}</el-descriptions-item>
-                <el-descriptions-item label="图纸口径">{{ estimateSnapshot.drawingCount ?? workspace?.drawingCount ?? '-' }}</el-descriptions-item>
-                <el-descriptions-item label="签证口径">{{ estimateSnapshot.visaCount ?? workspace?.visaCount ?? '-' }}</el-descriptions-item>
+                <el-descriptions-item label="图纸口径">{{
+                  estimateSnapshot.drawingCount ?? workspace?.includedDrawingCount ?? workspace?.drawingCount ?? '-'
+                }}</el-descriptions-item>
+                <el-descriptions-item label="签证口径">{{
+                  estimateSnapshot.visaCount ?? workspace?.includedVisaCount ?? workspace?.visaCount ?? '-'
+                }}</el-descriptions-item>
                 <el-descriptions-item label="生成时间" :span="2">{{ estimateSnapshot.createTime || '-' }}</el-descriptions-item>
               </el-descriptions>
               <el-alert v-if="estimateSnapshot.summary" :title="estimateSnapshot.summary" type="info" :closable="false" style="margin-top: 12px" />

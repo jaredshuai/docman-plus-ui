@@ -16,8 +16,12 @@
           <el-descriptions-item label="项目类型">{{ workspace.projectTypeCode || '-' }}</el-descriptions-item>
           <el-descriptions-item label="运行状态">{{ workspace.runtimeStatus }}</el-descriptions-item>
           <el-descriptions-item label="当前节点">{{ workspace.currentNodeName }}</el-descriptions-item>
-          <el-descriptions-item label="图纸数量">{{ workspace.drawingCount }}</el-descriptions-item>
-          <el-descriptions-item label="签证数量">{{ workspace.visaCount }}</el-descriptions-item>
+          <el-descriptions-item label="图纸数量 / 计入口径">
+            {{ workspace.drawingCount }} / {{ workspace.includedDrawingCount ?? workspace.drawingCount }}
+          </el-descriptions-item>
+          <el-descriptions-item label="签证数量 / 计入口径">
+            {{ workspace.visaCount }} / {{ workspace.includedVisaCount ?? workspace.visaCount }}
+          </el-descriptions-item>
         </el-descriptions>
 
         <div class="mt16" v-if="workspace">
@@ -123,10 +127,10 @@
                   {{ latestEstimateSnapshot.status || '-' }}
                 </el-descriptions-item>
                 <el-descriptions-item label="图纸口径">
-                  {{ latestEstimateSnapshot.drawingCount ?? workspace?.drawingCount ?? '-' }}
+                  {{ latestEstimateSnapshot.drawingCount ?? workspace?.includedDrawingCount ?? workspace?.drawingCount ?? '-' }}
                 </el-descriptions-item>
                 <el-descriptions-item label="签证口径">
-                  {{ latestEstimateSnapshot.visaCount ?? workspace?.visaCount ?? '-' }}
+                  {{ latestEstimateSnapshot.visaCount ?? workspace?.includedVisaCount ?? workspace?.visaCount ?? '-' }}
                 </el-descriptions-item>
                 <el-descriptions-item label="生成时间" :span="2">
                   {{ latestEstimateSnapshot.createTime || '-' }}
