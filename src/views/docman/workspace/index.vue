@@ -423,6 +423,10 @@ async function handleCompleteTask(taskRuntimeId: number) {
 
 function handleTaskAction(task: { id: number; taskCode?: string; taskType?: string }) {
   if (isRedirectTask(task)) {
+    if (task.taskCode === 'project_info_fill') {
+      handleOpenProjectEdit();
+      return;
+    }
     if (task.taskCode === 'drawing_fill') {
       drawingDialog.open = true;
       return;
@@ -514,6 +518,11 @@ function handleOpenWorkload() {
 function handleOpenBalance() {
   if (!hasProjectId.value) return;
   router.push({ path: '/docman/balance', query: { projectId: String(projectId.value) } });
+}
+
+function handleOpenProjectEdit() {
+  if (!hasProjectId.value) return;
+  router.push({ path: '/docman/project', query: { projectId: String(projectId.value), action: 'edit' } });
 }
 
 function resolveArtifactTagType(status?: string) {

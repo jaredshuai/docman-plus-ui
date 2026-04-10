@@ -24,6 +24,9 @@ export function hasExportTask(tasks: DocProjectNodeTaskRuntime[] | undefined): b
 
 export function resolvePluginTaskLabel(task: Pick<DocProjectNodeTaskRuntime, 'taskType' | 'taskCode' | 'completionRule'>): string {
   if (task.taskType !== 'plugin_run') {
+    if (task.taskCode === PROJECT_INFO_TASK_CODE) {
+      return '去完善';
+    }
     if (task.taskCode === DRAWING_TASK_CODE) {
       return '去录图纸';
     }
@@ -49,7 +52,8 @@ export function resolvePluginTaskLabel(task: Pick<DocProjectNodeTaskRuntime, 'ta
 
 export function isRedirectTask(task: Pick<DocProjectNodeTaskRuntime, 'taskCode' | 'taskType'>): boolean {
   return (
-    task.taskType !== 'plugin_run' && [DRAWING_TASK_CODE, VISA_TASK_CODE, WORKLOAD_TASK_CODE, MANAGER_ADJUST_TASK_CODE].includes(task.taskCode || '')
+    task.taskType !== 'plugin_run' &&
+    [PROJECT_INFO_TASK_CODE, DRAWING_TASK_CODE, VISA_TASK_CODE, WORKLOAD_TASK_CODE, MANAGER_ADJUST_TASK_CODE].includes(task.taskCode || '')
   );
 }
 

@@ -212,9 +212,9 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, onMounted, reactive, toRefs, getCurrentInstance, ComponentInternalInstance } from 'vue';
-import { useRouter } from 'vue-router';
-import { listProject, addProject, updateProject, delProject } from '@/api/docman/project';
+import { computed, ref, onMounted, reactive, toRefs, getCurrentInstance, ComponentInternalInstance, watch } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
+import { listProject, addProject, updateProject, delProject, getProject } from '@/api/docman/project';
 import { archiveProject } from '@/api/docman/archive';
 import { listProjectType } from '@/api/docman/projectType';
 import { DocProject, DocProjectQuery, DocProjectForm, PageResult } from '@/api/docman/types';
@@ -222,6 +222,7 @@ import { useUserStore } from '@/store/modules/user';
 import { handleApiError } from '@/utils/error';
 
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
+const route = useRoute();
 const router = useRouter();
 const userStore = useUserStore();
 const isSuperAdmin = computed(() => userStore.roles.includes('superadmin'));
@@ -517,6 +518,22 @@ function handleArchive(id: number) {
     .catch(() => {});
 }
 
+async function tryOpenProjectEditorFromRoute() {
+  const action = String(route.query.action || '');
+  const projectId = Number(route.query.projectId || 0);
+  if (action !== 'edit' || !Number.isFinite(projectId) || projectId <= 0) {
+    return;
+  }
+  try {
+    const project = await getProject(projectId);
+    handleUpdate(project.data);
+  } catch (error) {
+    handleApiError(error, '项目信息加载失败，请稍后重试');
+  } finally {
+    router.replace({ path: '/docman/project', query: {} });
+  }
+}
+
 onMounted(async () => {
   getList();
   try {
@@ -525,5 +542,13 @@ onMounted(async () => {
   } catch {
     projectTypeList.value = [];
   }
+  await tryOpenProjectEditorFromRoute();
 });
+
+watch(
+  () => [route.query.action, route.query.projectId],
+  () => {
+    tryOpenProjectEditorFromRoute();
+  }
+);
 </script>

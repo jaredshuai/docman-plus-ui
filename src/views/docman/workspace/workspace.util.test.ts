@@ -52,6 +52,9 @@ describe('workspace util', () => {
       '触发估算'
     );
     expect(resolvePluginTaskLabel({ taskType: 'plugin_run', taskCode: 'export_run', completionRule: '' })).toBe('导出文本');
+    expect(resolvePluginTaskLabel({ taskType: 'form_fill', taskCode: 'project_info_fill', completionRule: 'project_basic_info_present' })).toBe(
+      '去完善'
+    );
     expect(resolvePluginTaskLabel({ taskType: 'form_fill', taskCode: 'drawing_fill', completionRule: 'drawing_exists' })).toBe('去录图纸');
     expect(resolvePluginTaskLabel({ taskType: 'form_fill', taskCode: 'visa_fill', completionRule: 'visa_exists' })).toBe('去录签证');
     expect(resolvePluginTaskLabel({ taskType: 'form_fill', taskCode: 'workload_fill', completionRule: 'workload_exists' })).toBe('去录入');
@@ -62,6 +65,7 @@ describe('workspace util', () => {
   });
 
   it('marks workload and manager adjust tasks as redirect actions', () => {
+    expect(isRedirectTask({ taskType: 'form_fill', taskCode: 'project_info_fill' })).toBe(true);
     expect(isRedirectTask({ taskType: 'form_fill', taskCode: 'drawing_fill' })).toBe(true);
     expect(isRedirectTask({ taskType: 'form_fill', taskCode: 'visa_fill' })).toBe(true);
     expect(isRedirectTask({ taskType: 'form_fill', taskCode: 'workload_fill' })).toBe(true);
