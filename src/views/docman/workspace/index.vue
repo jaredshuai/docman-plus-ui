@@ -29,24 +29,28 @@
             <el-button type="primary" @click="drawingDialog.open = true" v-hasPermi="['docman:project:edit']">录入图纸</el-button>
             <el-button type="success" @click="visaDialog.open = true" v-hasPermi="['docman:project:edit']">录入签证</el-button>
             <el-button
-              v-if="canTriggerEstimate"
+              v-if="showEstimateTrigger"
               type="info"
+              :disabled="!canTriggerEstimate"
               :loading="estimateLoading"
               @click="handleTriggerEstimate"
               v-hasPermi="['docman:project:edit']"
             >
               触发估算
             </el-button>
+            <span v-if="showEstimateTrigger && !canTriggerEstimate" class="action-tip">{{ estimateTriggerBlockedReason }}</span>
             <el-button
-              v-if="canTriggerExport"
+              v-if="showExportTrigger"
               type="primary"
               plain
+              :disabled="!canTriggerExport"
               :loading="exportLoading"
               @click="handleTriggerExport"
               v-hasPermi="['docman:project:edit']"
             >
               导出文本
             </el-button>
+            <span v-if="showExportTrigger && !canTriggerExport" class="action-tip">{{ exportTriggerBlockedReason }}</span>
             <el-button type="warning" @click="handleAdvance" v-hasPermi="['docman:project:edit']">推进节点</el-button>
             <el-button plain @click="handleOpenDocumentCenter" v-hasPermi="['docman:document:list']">文档中心</el-button>
           </el-space>
@@ -293,7 +297,7 @@ import { downloadDocument } from '@/api/docman/document';
 import { listProjectDrawings, saveProjectDrawing } from '@/api/docman/drawing';
 import { listProjectVisas, saveProjectVisa } from '@/api/docman/visa';
 import type { DocProjectDrawing, DocProjectDrawingForm, DocProjectVisa, DocProjectVisaForm, DocProjectWorkspace } from '@/api/docman/types';
-import { hasEstimateTask, hasExportTask, resolvePluginTaskLabel } from './workspace.util';
+import { resolvePluginTaskLabel } from './workspace.util';
 
 const route = useRoute();
 const router = useRouter();
@@ -332,8 +336,12 @@ const visaForm = reactive<DocProjectVisaForm>({
 
 const latestEstimateSnapshot = computed(() => workspace.value?.latestEstimateSnapshot);
 const latestExportArtifact = computed(() => workspace.value?.latestExportArtifact);
-const canTriggerEstimate = computed(() => hasEstimateTask(workspace.value?.currentNodeTasks));
-const canTriggerExport = computed(() => hasExportTask(workspace.value?.currentNodeTasks));
+const canTriggerEstimate = computed(() => Boolean(workspace.value?.estimateTriggerReady));
+const estimateTriggerBlockedReason = computed(() => workspace.value?.estimateTriggerBlockedReason || '');
+const showEstimateTrigger = computed(() => canTriggerEstimate.value || Boolean(estimateTriggerBlockedReason.value));
+const canTriggerExport = computed(() => Boolean(workspace.value?.exportTriggerReady));
+const exportTriggerBlockedReason = computed(() => workspace.value?.exportTriggerBlockedReason || '');
+const showExportTrigger = computed(() => canTriggerExport.value || Boolean(exportTriggerBlockedReason.value));
 
 async function loadAll() {
   if (!hasProjectId.value) {
@@ -485,3 +493,10 @@ watch(
   { immediate: true }
 );
 </script>
+
+<style scoped>
+.action-tip {
+  color: #909399;
+  font-size: 13px;
+}
+</style>

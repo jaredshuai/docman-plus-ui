@@ -226,6 +226,10 @@ export interface DocProjectWorkspace {
   includedDrawingCount?: number;
   visaCount: number;
   includedVisaCount?: number;
+  estimateTriggerReady?: boolean;
+  estimateTriggerBlockedReason?: string;
+  exportTriggerReady?: boolean;
+  exportTriggerBlockedReason?: string;
   latestEstimateSnapshot?: DocProjectEstimateSnapshot;
   latestExportArtifact?: DocDocumentRecord;
 }
