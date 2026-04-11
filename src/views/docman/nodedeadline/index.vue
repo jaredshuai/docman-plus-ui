@@ -109,6 +109,7 @@ import dayjs from 'dayjs';
 import { ElMessage } from 'element-plus';
 import { listProcessDefinitions } from '@/api/docman/process';
 import { listProject } from '@/api/docman/project';
+import type { DocmanId } from '@/api/docman/types';
 import {
   listNodesByDefinition,
   updateNodeDuration,
@@ -186,23 +187,23 @@ const handleSaveDuration = async () => {
 };
 
 /* ======================== Tab 2：截止日期列表 ======================== */
-const projectList = ref<Array<{ id: number; name: string }>>([]);
-const selectedProjectId = ref<number>();
+const projectList = ref<Array<{ id: DocmanId; name: string }>>([]);
+const selectedProjectId = ref<DocmanId>();
 const deadlineList = ref<NodeDeadlineVo[]>([]);
 const deadlineLoading = ref(false);
 const deadlineLoadError = ref('');
 
 const loadProjects = async () => {
   try {
-    const res = (await listProject({ pageNum: 1, pageSize: 1000 } as any)) as any;
-    projectList.value = (res?.rows || []).map((p: any) => ({ id: p.id, name: p.name }));
+    const res = await listProject({ pageNum: 1, pageSize: 1000, name: '', customerType: '', businessType: '' });
+    projectList.value = (res.rows || []).map((project) => ({ id: project.id, name: project.name }));
   } catch (e) {
     projectList.value = [];
     handleApiError(e, '获取项目列表失败');
   }
 };
 
-const handleProjectChange = async (projectId: number) => {
+const handleProjectChange = async (projectId: DocmanId) => {
   if (!projectId) return;
   deadlineLoading.value = true;
   deadlineLoadError.value = '';
@@ -230,7 +231,7 @@ const remainColor = (days: number): string => {
 // 修改截止日期弹窗
 const deadlineDialogVisible = ref(false);
 const deadlineSaving = ref(false);
-const deadlineForm = ref<{ id: number; nodeCode: string; deadline: string }>({
+const deadlineForm = ref<{ id: DocmanId; nodeCode: string; deadline: string }>({
   id: 0,
   nodeCode: '',
   deadline: ''

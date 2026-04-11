@@ -2,6 +2,11 @@ import type { RoleVO } from '@/api/system/role/types';
 import type { UserForm, UserVO } from '@/api/system/user/types';
 
 export const ADMIN_ROLE_KEYS = ['superadmin', 'admin'];
+type AdminFormSource = Omit<Partial<UserForm>, 'userId' | 'id'> &
+  Partial<UserVO> & {
+    userId?: string | number;
+    id?: string | number;
+  };
 
 export function filterAdminRoles(roles: RoleVO[]): RoleVO[] {
   return roles.filter((role) => ADMIN_ROLE_KEYS.includes(role.roleKey));
@@ -11,10 +16,10 @@ export function canMutateAdminUser(user: Pick<UserVO, 'userId'>): boolean {
   return String(user.userId) !== '1';
 }
 
-export function normalizeAdminForm(form: Partial<UserForm>): UserForm {
+export function normalizeAdminForm(form: AdminFormSource): UserForm {
   return {
-    userId: form.userId,
-    id: form.id,
+    userId: form.userId === undefined ? undefined : String(form.userId),
+    id: form.id === undefined ? undefined : String(form.id),
     deptId: form.deptId,
     userName: form.userName || '',
     nickName: form.nickName || '',

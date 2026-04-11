@@ -1,5 +1,6 @@
 import request from '@/utils/request';
 import type { AxiosPromise } from 'axios';
+import type { DocmanId } from './types';
 
 /** 节点时限配置 VO */
 export interface NodeDurationVo {
@@ -11,9 +12,9 @@ export interface NodeDurationVo {
 
 /** 节点截止日期 VO */
 export interface NodeDeadlineVo {
-  id: number;
-  processInstanceId: number;
-  projectId: number;
+  id: DocmanId;
+  processInstanceId: DocmanId;
+  projectId: DocmanId;
   projectName: string;
   nodeCode: string;
   nodeName: string;
@@ -34,11 +35,11 @@ export function updateNodeDuration(data: { nodeId: number; durationDays: number 
 }
 
 /** 查询项目截止日期列表 */
-export function listNodeDeadlines(projectId: number): AxiosPromise<NodeDeadlineVo[]> {
+export function listNodeDeadlines(projectId: DocmanId): AxiosPromise<NodeDeadlineVo[]> {
   return request({ url: '/docman/node/deadline/list', method: 'get', params: { projectId } });
 }
 
 /** 修改截止日期 */
-export function updateNodeDeadline(data: { id: number; deadline: string }): AxiosPromise<void> {
+export function updateNodeDeadline(data: { id: DocmanId; deadline: string }): AxiosPromise<void> {
   return request({ url: '/docman/node/deadline', method: 'put', data });
 }

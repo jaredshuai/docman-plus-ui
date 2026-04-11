@@ -284,7 +284,7 @@ async function loadPlugins() {
   pluginLoadError.value = '';
   try {
     const res = await listPlugins();
-    pluginList.value = res.data || [];
+    pluginList.value = res || [];
   } catch (error) {
     pluginList.value = [];
     pluginLoadError.value = handleApiError(error, '插件列表加载失败', { showMessage: false });

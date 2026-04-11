@@ -98,7 +98,7 @@ import { useRoute } from 'vue-router';
 import { listExecutionLogs, listPlugins, triggerExecution, type DocPluginExecutionLogQuery, type DocPluginExecutionLogVo } from '@/api/docman/plugin';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { listProject } from '@/api/docman/project';
-import { DocProject, DocPluginInfo } from '@/api/docman/types';
+import { DocProject, DocPluginInfo, DocmanId } from '@/api/docman/types';
 import { handleApiError } from '@/utils/error';
 import { useRouteProjectId } from '@/hooks/useRouteProjectId';
 
@@ -116,6 +116,11 @@ const pluginLoading = ref(true);
 const total = ref(0);
 const loadError = ref('');
 
+type PluginLogQueryForm = DocPluginExecutionLogQuery & {
+  pageNum: number;
+  pageSize: number;
+};
+
 const data = reactive({
   queryParams: {
     pageNum: 1,
@@ -123,7 +128,7 @@ const data = reactive({
     projectId: undefined,
     pluginId: undefined,
     status: undefined
-  } as any,
+  } as PluginLogQueryForm,
   drawer: {
     open: false,
     data: {} as Partial<DocPluginExecutionLogVo>
@@ -137,7 +142,7 @@ async function getPluginList() {
   pluginLoading.value = true;
   try {
     const res = await listPlugins();
-    pluginList.value = res.data;
+    pluginList.value = res;
   } catch (e) {
     pluginList.value = [];
     handleApiError(e, '获取插件列表失败');
@@ -172,7 +177,7 @@ async function getList() {
 /** 查询项目下拉选项 */
 async function getProjectOptions() {
   try {
-    const res = (await listProject({ pageNum: 1, pageSize: 100 })) as any;
+    const res = await listProject({ pageNum: 1, pageSize: 100 });
     projectOptions.value = res.rows;
   } catch (e) {
     projectOptions.value = [];
@@ -237,7 +242,7 @@ onMounted(() => {
 watch(
   projectId,
   (value) => {
-    queryParams.value.projectId = value;
+    queryParams.value.projectId = value as DocmanId;
     queryParams.value.pageNum = 1;
     loadError.value = '';
     getList();

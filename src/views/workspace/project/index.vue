@@ -67,8 +67,9 @@ import { getCurrentInstance, onMounted, reactive, ref, toRefs, type ComponentInt
 import { useRouter } from 'vue-router';
 import { ElMessage } from 'element-plus';
 import { listMyProject } from '@/api/docman/project';
-import type { DocProject, DocProjectQuery } from '@/api/docman/types';
+import type { DocProject, DocProjectQuery, DocmanId } from '@/api/docman/types';
 import { handleApiError } from '@/utils/error';
+import { resolveDictLabel, resolveDictTagType } from '../../docman/docmanDict.util';
 
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 const router = useRouter();
@@ -87,27 +88,20 @@ const queryParams = reactive<Partial<DocProjectQuery>>({
   businessType: ''
 });
 
-const resolveDictOption = (options: any, value?: string) => {
-  if (!value) {
-    return undefined;
-  }
-  return proxy?.selectDictLabel(options?.value, value) as { label?: string; cssClass?: string } | undefined;
-};
+const getStatusLabel = (value?: string) => resolveDictLabel(doc_project_status.value, value, value || '-');
 
-const getStatusLabel = (value?: string) => resolveDictOption(doc_project_status, value)?.label || value || '-';
+const getStatusTagType = (value?: string) => resolveDictTagType(doc_project_status.value, value, 'primary');
 
-const getStatusTagType = (value?: string) => resolveDictOption(doc_project_status, value)?.cssClass || 'primary';
+const getCustomerTypeLabel = (value?: string) => resolveDictLabel(doc_customer_type.value, value, value || '-');
 
-const getCustomerTypeLabel = (value?: string) => resolveDictOption(doc_customer_type, value)?.label || value || '-';
-
-const getBusinessTypeLabel = (value?: string) => resolveDictOption(doc_business_type, value)?.label || value || '-';
+const getBusinessTypeLabel = (value?: string) => resolveDictLabel(doc_business_type.value, value, value || '-');
 
 const loadProjects = async () => {
   loading.value = true;
   loadError.value = '';
   try {
     const res = await listMyProject(queryParams);
-    projectList.value = res.data || [];
+    projectList.value = res || [];
   } catch (error) {
     projectList.value = [];
     loadError.value = handleApiError(error, '项目数据加载失败');
@@ -121,15 +115,15 @@ const resetQuery = () => {
   loadProjects();
 };
 
-const openDocuments = (projectId: number) => {
+const openDocuments = (projectId: DocmanId) => {
   router.push({ path: '/workspace/document', query: { projectId: String(projectId) } });
 };
 
-const openProcess = (projectId: number) => {
+const openProcess = (projectId: DocmanId) => {
   router.push({ path: '/workspace/process', query: { projectId: String(projectId) } });
 };
 
-const openArchive = (projectId: number) => {
+const openArchive = (projectId: DocmanId) => {
   router.push({ path: '/workspace/archive', query: { projectId: String(projectId) } });
 };
 

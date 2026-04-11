@@ -25,7 +25,7 @@ export function buildLeaderProjectSnapshots(projects: ProjectProgress[]): Leader
   return [...projects]
     .map((project) => {
       const documentCompletionRate = calcDocumentCompletionRate(project.totalDocuments, project.pendingDocuments);
-      const attentionLevel =
+      const attentionLevel: LeaderProjectSnapshot['attentionLevel'] =
         project.pendingDocuments > 0 && project.progressRate < 60
           ? 'danger'
           : project.pendingDocuments > 0 || project.progressRate < 80
@@ -48,7 +48,7 @@ export function buildLeaderProjectSnapshots(projects: ProjectProgress[]): Leader
       };
     })
     .sort((left, right) => {
-      const rank = { danger: 0, warning: 1, success: 2 };
+      const rank: Record<LeaderProjectSnapshot['attentionLevel'], number> = { danger: 0, warning: 1, success: 2 };
       return (
         rank[left.attentionLevel] - rank[right.attentionLevel] ||
         right.pendingDocuments - left.pendingDocuments ||

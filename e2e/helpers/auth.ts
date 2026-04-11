@@ -37,6 +37,8 @@ export const HOME_URL = resolveAppUrl('/');
  */
 export const DOCMAN_URLS = {
   dashboard: resolveAppUrl('/docman/dashboard'),
+  workspace: resolveAppUrl('/docman/workspace'),
+  balance: resolveAppUrl('/docman/balance'),
   project: resolveAppUrl('/docman/project'),
   document: resolveAppUrl('/docman/document'),
   process: resolveAppUrl('/docman/process'),
@@ -49,7 +51,7 @@ export const DOCMAN_URLS = {
   visa: resolveAppUrl('/docman/visa')
 };
 
-export const DEMO_PROJECT_ID = 9100001;
+export const DEMO_PROJECT_ID = '9100001';
 
 /**
  * 执行登录操作

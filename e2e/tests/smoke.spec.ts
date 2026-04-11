@@ -64,14 +64,15 @@ test.describe('P0 docman 页面测试', () => {
   test('项目管理页面可打开', async ({ page }) => {
     await page.goto(DOCMAN_URLS.project);
 
-    const projectPage = page.locator('.app-container').first();
+    const projectPage = page.locator('[data-testid="project-page"], .app-container').first();
     await expect(projectPage).toBeVisible({ timeout: 20000 });
 
-    const searchForm = page.locator('.el-form').first();
+    const searchForm = page.getByTestId('project-search-form');
+    const projectTable = page.getByTestId('project-table');
     await expect(searchForm).toBeVisible({ timeout: 10000 });
+    await expect(projectTable).toBeVisible({ timeout: 10000 });
     await expect(page.getByRole('button', { name: '新增项目' })).toBeVisible();
     await expect(page.getByRole('button', { name: '领导概览' })).toBeVisible();
-    await expect(page.locator('.project-card').first()).toBeVisible({ timeout: 10000 });
   });
 
   test('项目页可进入领导概览', async ({ page }) => {

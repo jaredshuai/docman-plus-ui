@@ -1,6 +1,8 @@
 import { defineConfig, devices } from '@playwright/test';
 
 const DOCMAN_E2E_BASE_URL = process.env.DOCMAN_E2E_BASE_URL || 'http://localhost';
+const DEFAULT_PLAYWRIGHT_WORKERS = process.env.CI ? 1 : 4;
+const PLAYWRIGHT_WORKERS = Number(process.env.PLAYWRIGHT_WORKERS || DEFAULT_PLAYWRIGHT_WORKERS);
 
 /**
  * Read environment variables from file.
@@ -20,7 +22,7 @@ export default defineConfig({
   /* Retry on CI only */
   retries: process.env.CI ? 2 : 0,
   /* Opt out of parallel tests on CI. */
-  workers: process.env.CI ? 1 : undefined,
+  workers: Number.isFinite(PLAYWRIGHT_WORKERS) && PLAYWRIGHT_WORKERS > 0 ? PLAYWRIGHT_WORKERS : DEFAULT_PLAYWRIGHT_WORKERS,
   /* Reporter to use. See https://playwright.dev/docs/test-reporters */
   reporter: [['html', { outputFolder: 'e2e-report' }], ['list']],
   /* Shared settings for all the projects below. See https://playwright.dev/docs/api/class-testoptions. */

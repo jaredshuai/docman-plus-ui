@@ -57,12 +57,12 @@
       <el-table-column prop="name" label="项目名称" min-width="180" />
       <el-table-column label="客户类型" width="130">
         <template #default="{ row }">
-          {{ proxy?.selectDictLabel(doc_customer_type.value, row.customerType)?.label || row.customerType }}
+          {{ resolveDictLabel(doc_customer_type, row.customerType, row.customerType || '-') }}
         </template>
       </el-table-column>
       <el-table-column label="业务类型" width="130">
         <template #default="{ row }">
-          {{ proxy?.selectDictLabel(doc_business_type.value, row.businessType)?.label || row.businessType }}
+          {{ resolveDictLabel(doc_business_type, row.businessType, row.businessType || '-') }}
         </template>
       </el-table-column>
       <el-table-column label="项目类型" width="140">
@@ -217,9 +217,10 @@ import { useRoute, useRouter } from 'vue-router';
 import { listProject, addProject, updateProject, delProject, getProject } from '@/api/docman/project';
 import { archiveProject } from '@/api/docman/archive';
 import { listProjectType } from '@/api/docman/projectType';
-import { DocProject, DocProjectQuery, DocProjectForm, PageResult } from '@/api/docman/types';
+import { DocProject, DocProjectQuery, DocProjectForm, DocmanId } from '@/api/docman/types';
 import { useUserStore } from '@/store/modules/user';
 import { handleApiError } from '@/utils/error';
+import { resolveDictLabel } from '../docmanDict.util';
 
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 const route = useRoute();
@@ -277,6 +278,11 @@ const data = reactive({
 });
 
 const { queryParams, form, rules } = toRefs(data);
+
+function resolveSafeOwnerId(): DocmanId | undefined {
+  const ownerId = String(userStore.userId ?? '').trim();
+  return /^\d+$/.test(ownerId) && ownerId !== '0' ? ownerId : undefined;
+}
 
 function resolveProjectTypeName(projectTypeCode?: string) {
   return projectTypeList.value.find((item) => item.code === projectTypeCode)?.name || projectTypeCode || '-';
@@ -405,11 +411,11 @@ const submitForm = () => {
           await updateProject(form.value);
           proxy?.$modal.msgSuccess('修改成功');
         } else {
-          const ownerId = Number(userStore.userId);
+          const ownerId = resolveSafeOwnerId();
           await addProject({
             ...form.value,
-            ...(Number.isFinite(ownerId) && ownerId > 0 ? { ownerId } : {})
-          } as DocProjectForm & { ownerId?: number });
+            ...(ownerId ? { ownerId } : {})
+          } as DocProjectForm & { ownerId?: DocmanId });
           proxy?.$modal.msgSuccess('新增成功');
         }
         dialog.visible = false;
@@ -422,7 +428,7 @@ const submitForm = () => {
 };
 
 /** 删除按钮操作 */
-function handleDelete(id: number) {
+function handleDelete(id: DocmanId) {
   proxy?.$modal
     .confirm('是否确认删除该项目？')
     .then(async () => {
@@ -437,30 +443,30 @@ function handleDelete(id: number) {
     .catch(() => {});
 }
 
-function handleDocuments(id: number) {
+function handleDocuments(id: DocmanId) {
   router.push({ path: '/docman/document', query: { projectId: String(id) } });
 }
-function handleWorkload(id: number) {
+function handleWorkload(id: DocmanId) {
   router.push(`/docman/workload/${id}`);
 }
-function handleDrawing(id: number) {
+function handleDrawing(id: DocmanId) {
   router.push(`/docman/drawing/${id}`);
 }
-function handleWorkspace(id: number) {
+function handleWorkspace(id: DocmanId) {
   router.push({ path: '/docman/workspace', query: { projectId: String(id) } });
 }
-function handleBalance(id: number) {
+function handleBalance(id: DocmanId) {
   router.push({ path: '/docman/balance', query: { projectId: String(id) } });
 }
-function handleProcess(id: number) {
+function handleProcess(id: DocmanId) {
   router.push({ path: '/docman/process', query: { projectId: String(id) } });
 }
 
-function handleMembers(id: number) {
+function handleMembers(id: DocmanId) {
   router.push(`/docman/member/${id}`);
 }
 
-function handleArchiveDetail(id: number) {
+function handleArchiveDetail(id: DocmanId) {
   router.push({ path: '/docman/archive', query: { projectId: String(id) } });
 }
 
@@ -503,7 +509,7 @@ function handleCommand(command: string, row: DocProject) {
 }
 
 /** 归档按钮操作 */
-function handleArchive(id: number) {
+function handleArchive(id: DocmanId) {
   proxy?.$modal
     .confirm('确认归档该项目？归档后不可修改。')
     .then(async () => {
@@ -520,13 +526,13 @@ function handleArchive(id: number) {
 
 async function tryOpenProjectEditorFromRoute() {
   const action = String(route.query.action || '');
-  const projectId = Number(route.query.projectId || 0);
-  if (action !== 'edit' || !Number.isFinite(projectId) || projectId <= 0) {
+  const projectId = String(route.query.projectId || '').trim();
+  if (action !== 'edit' || !/^\d+$/.test(projectId) || projectId === '0') {
     return;
   }
   try {
     const project = await getProject(projectId);
-    handleUpdate(project.data);
+    handleUpdate(project);
   } catch (error) {
     handleApiError(error, '项目信息加载失败，请稍后重试');
   } finally {

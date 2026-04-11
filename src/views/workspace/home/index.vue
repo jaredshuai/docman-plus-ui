@@ -91,8 +91,9 @@ import { Bell, CircleCheck, FolderOpened, Warning } from '@element-plus/icons-vu
 import { ElMessage } from 'element-plus';
 import { getTodoSummary, type TodoSummary } from '@/api/docman/dashboard';
 import { listMyProject } from '@/api/docman/project';
-import type { DocProject } from '@/api/docman/types';
+import type { DocProject, DocmanId } from '@/api/docman/types';
 import { handleApiError } from '@/utils/error';
+import { resolveDictLabel, resolveDictTagType } from '../../docman/docmanDict.util';
 
 const router = useRouter();
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
@@ -156,27 +157,20 @@ const summaryCards = computed(() => [
 
 const projectPreviewList = computed(() => projectList.value.slice(0, 4));
 
-const resolveDictOption = (options: any, value?: string) => {
-  if (!value) {
-    return undefined;
-  }
-  return proxy?.selectDictLabel(options?.value, value) as { label?: string; cssClass?: string } | undefined;
-};
+const getStatusLabel = (value?: string) => resolveDictLabel(doc_project_status.value, value, value || '-');
 
-const getStatusLabel = (value?: string) => resolveDictOption(doc_project_status, value)?.label || value || '-';
+const getStatusTagType = (value?: string) => resolveDictTagType(doc_project_status.value, value, 'primary');
 
-const getStatusTagType = (value?: string) => resolveDictOption(doc_project_status, value)?.cssClass || 'primary';
+const getCustomerTypeLabel = (value?: string) => resolveDictLabel(doc_customer_type.value, value, value || '-');
 
-const getCustomerTypeLabel = (value?: string) => resolveDictOption(doc_customer_type, value)?.label || value || '-';
-
-const getBusinessTypeLabel = (value?: string) => resolveDictOption(doc_business_type, value)?.label || value || '-';
+const getBusinessTypeLabel = (value?: string) => resolveDictLabel(doc_business_type.value, value, value || '-');
 
 const loadWorkspace = async () => {
   loading.value = true;
   try {
     const [summaryRes, projectRes] = await Promise.all([getTodoSummary(), listMyProject()]);
     summary.value = summaryRes.data;
-    projectList.value = projectRes.data || [];
+    projectList.value = projectRes || [];
   } catch (error) {
     handleApiError(error, '工作台数据加载失败');
   } finally {
@@ -188,15 +182,15 @@ const goToMyProjects = () => {
   router.push('/workspace/project');
 };
 
-const openProjectDocuments = (projectId: number) => {
+const openProjectDocuments = (projectId: DocmanId) => {
   router.push({ path: '/workspace/document', query: { projectId: String(projectId) } });
 };
 
-const openProjectProcess = (projectId: number) => {
+const openProjectProcess = (projectId: DocmanId) => {
   router.push({ path: '/workspace/process', query: { projectId: String(projectId) } });
 };
 
-const openProjectArchive = (projectId: number) => {
+const openProjectArchive = (projectId: DocmanId) => {
   router.push({ path: '/workspace/archive', query: { projectId: String(projectId) } });
 };
 

@@ -30,6 +30,12 @@ npx playwright install chromium
 # 运行所有 E2E 测试
 npm run test:e2e
 
+# 指定联调地址并限制并发 worker（推荐联调环境使用）
+$env:DOCMAN_E2E_BASE_URL="http://10.34.200.102:28080"
+$env:DOCMAN_E2E_API_BASE_URL="http://10.34.200.102:28081"
+$env:PLAYWRIGHT_WORKERS="4"
+npm run test:e2e
+
 # 运行 smoke 测试
 npm run test:e2e:smoke
 
@@ -66,7 +72,9 @@ npm run test:e2e:report
 配置文件：`playwright.config.ts`
 
 - **baseURL**: 默认 `http://localhost`，可通过 `DOCMAN_E2E_BASE_URL` 覆盖
+- **后端 API**: 可通过 `DOCMAN_E2E_API_BASE_URL` 覆盖
 - **浏览器**: Chromium
+- **默认并发**: 本地默认最多 `4` 个 worker，可通过 `PLAYWRIGHT_WORKERS` 覆盖
 - **失败时截图**: 启用
 - **失败时保留视频**: 启用
 - **失败时保留 trace**: 启用
