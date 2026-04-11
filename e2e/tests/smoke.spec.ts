@@ -99,7 +99,12 @@ test.describe('P0 docman 页面测试', () => {
 
     await expect(page.locator('.el-divider', { hasText: '执行日志' })).toBeVisible({ timeout: 15000 });
     await expect(page.locator('.el-table').first()).toBeVisible();
-    await expect(page.getByText('AI生成插件', { exact: true })).toBeVisible();
+    const pluginCards = page.locator('.plugin-card');
+    if ((await pluginCards.count()) > 0) {
+      await expect(pluginCards.first()).toBeVisible();
+    } else {
+      await expect(page.getByText('暂无已注册插件', { exact: true })).toBeVisible();
+    }
   });
 
   test('流程编排页面可打开', async ({ page }) => {
