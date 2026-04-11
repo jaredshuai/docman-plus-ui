@@ -1,27 +1,26 @@
 import request from '@/utils/request';
-import { AxiosPromise } from 'axios';
-import { DocProject, DocProjectQuery, DocProjectForm, PageResult } from './types';
+import { DocProject, DocProjectQuery, DocProjectForm, DocmanId, PageResult } from './types';
 
-export function listProject(query: DocProjectQuery): AxiosPromise<PageResult<DocProject>> {
+export function listProject(query: DocProjectQuery): Promise<PageResult<DocProject>> {
   return request({ url: '/docman/project/list', method: 'get', params: query });
 }
 
-export function listMyProject(query?: Partial<DocProjectQuery>): AxiosPromise<DocProject[]> {
+export function listMyProject(query?: Partial<DocProjectQuery>): Promise<DocProject[]> {
   return request({ url: '/docman/project/my', method: 'get', params: query });
 }
 
-export function getProject(id: number): AxiosPromise<DocProject> {
+export function getProject(id: DocmanId): Promise<DocProject> {
   return request({ url: '/docman/project/' + id, method: 'get' });
 }
 
-export function addProject(data: DocProjectForm): AxiosPromise<void> {
+export function addProject(data: DocProjectForm): Promise<void> {
   return request({ url: '/docman/project', method: 'post', data });
 }
 
-export function updateProject(data: DocProjectForm): AxiosPromise<void> {
+export function updateProject(data: DocProjectForm): Promise<void> {
   return request({ url: '/docman/project', method: 'put', data });
 }
 
-export function delProject(ids: number[]): AxiosPromise<void> {
+export function delProject(ids: DocmanId[]): Promise<void> {
   return request({ url: '/docman/project/' + ids.join(','), method: 'delete' });
 }

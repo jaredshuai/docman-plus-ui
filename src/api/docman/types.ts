@@ -3,50 +3,58 @@ export interface PageResult<T> {
   total: number;
 }
 
+export type DocmanId = string | number;
+
 export interface DocProject {
-  id: number;
+  id: DocmanId;
   name: string;
   projectTypeCode?: string;
   customerType: string;
   businessType: string;
   documentCategory: string;
   status: string;
-  ownerId: number;
+  ownerId: DocmanId;
   ownerName?: string;
   nasBasePath?: string;
   nasDirStatus?: string;
   remark?: string;
-  memberIds?: number[];
+  memberIds?: DocmanId[];
   currentUserRole?: string;
   createTime?: string;
 }
 
 export interface DocProjectQuery extends PageQuery {
   name?: string;
+  projectTypeCode?: string;
   customerType?: string;
   businessType?: string;
 }
 
 export interface DocProjectForm {
-  id?: number;
+  id?: DocmanId;
   name: string;
   projectTypeCode?: string;
   customerType: string;
   businessType: string;
   documentCategory: string;
+  telecomCode?: string;
+  xiangyunCode?: string;
+  telecomProjectDate?: string;
+  planStartDate?: string;
+  planEndDate?: string;
   remark?: string;
 }
 
 export interface DocDocumentRecord {
-  id: number;
-  projectId: number;
+  id: DocmanId;
+  projectId: DocmanId;
   projectName?: string;
-  nodeInstanceId?: number;
+  nodeInstanceId?: DocmanId;
   pluginId?: string;
   sourceType: string;
   fileName: string;
   nasPath: string;
-  ossId?: number;
+  ossId?: DocmanId;
   status: string;
   generatedAt?: string;
   archivedAt?: string;
@@ -67,16 +75,16 @@ export interface DocViewerUrl {
 }
 
 export interface DocProcessConfig {
-  id: number;
-  projectId: number;
-  definitionId: number;
-  instanceId?: number;
+  id: DocmanId;
+  projectId: DocmanId;
+  definitionId: DocmanId;
+  instanceId?: DocmanId;
   status: string;
 }
 
 export interface DocProjectDrawing {
-  id: number;
-  projectId: number;
+  id: DocmanId;
+  projectId: DocmanId;
   drawingCode?: string;
   orderSerialNo?: string;
   workContent?: string;
@@ -86,7 +94,7 @@ export interface DocProjectDrawing {
 }
 
 export interface DocProjectDrawingForm {
-  id?: number;
+  id?: DocmanId;
   projectId: string | number;
   drawingCode?: string;
   orderSerialNo?: string;
@@ -96,9 +104,9 @@ export interface DocProjectDrawingForm {
 }
 
 export interface DocProjectAddRecordDetail {
-  id?: number;
-  projectId: number;
-  projectAddRecordId?: number;
+  id?: DocmanId;
+  projectId: DocmanId;
+  projectAddRecordId?: DocmanId;
   name?: string;
   alias?: string;
   price?: number;
@@ -108,8 +116,8 @@ export interface DocProjectAddRecordDetail {
 }
 
 export interface DocProjectAddRecord {
-  id?: number;
-  projectId: number;
+  id?: DocmanId;
+  projectId: DocmanId;
   enable?: boolean;
   estimatedPrice?: number;
   remark?: string;
@@ -119,9 +127,9 @@ export interface DocProjectAddRecord {
 }
 
 export interface DocProjectAddRecordDetailForm {
-  id?: number;
+  id?: DocmanId;
   projectId: string | number;
-  projectAddRecordId?: number;
+  projectAddRecordId?: DocmanId;
   name?: string;
   alias?: string;
   price?: number;
@@ -129,7 +137,7 @@ export interface DocProjectAddRecordDetailForm {
 }
 
 export interface DocProjectAddRecordForm {
-  id?: number;
+  id?: DocmanId;
   projectId: string | number;
   enable?: boolean;
   estimatedPrice?: number;
@@ -138,8 +146,8 @@ export interface DocProjectAddRecordForm {
 }
 
 export interface DocProjectVisa {
-  id: number;
-  projectId: number;
+  id: DocmanId;
+  projectId: DocmanId;
   reason?: string;
   contentBasis?: string;
   amount?: number;
@@ -150,7 +158,7 @@ export interface DocProjectVisa {
 }
 
 export interface DocProjectVisaForm {
-  id?: number;
+  id?: DocmanId;
   projectId: string | number;
   reason?: string;
   contentBasis?: string;
@@ -161,8 +169,8 @@ export interface DocProjectVisaForm {
 }
 
 export interface DocWorkflowNodeTask {
-  id: number;
-  nodeId?: number;
+  id: DocmanId;
+  nodeId?: DocmanId;
   taskCode: string;
   taskName: string;
   taskType: string;
@@ -174,8 +182,8 @@ export interface DocWorkflowNodeTask {
 }
 
 export interface DocWorkflowTemplateNode {
-  id: number;
-  templateId?: number;
+  id: DocmanId;
+  templateId?: DocmanId;
   nodeCode: string;
   nodeName: string;
   sortOrder?: number;
@@ -185,8 +193,8 @@ export interface DocWorkflowTemplateNode {
 }
 
 export interface DocProjectNodeTaskRuntime {
-  id: number;
-  projectId: number;
+  id: DocmanId;
+  projectId: DocmanId;
   nodeCode: string;
   taskCode: string;
   taskName?: string;
@@ -196,14 +204,14 @@ export interface DocProjectNodeTaskRuntime {
   completionRule?: string;
   pluginCodes?: string;
   status: string;
-  completedBy?: number;
+  completedBy?: DocmanId;
   completedAt?: string;
   evidenceRef?: string;
 }
 
 export interface DocProjectEstimateSnapshot {
-  id: number;
-  projectId: number;
+  id: DocmanId;
+  projectId: DocmanId;
   estimateType?: string;
   estimateAmount?: number;
   drawingCount?: number;
@@ -214,7 +222,7 @@ export interface DocProjectEstimateSnapshot {
 }
 
 export interface DocProjectWorkspace {
-  projectId: number;
+  projectId: DocmanId;
   projectName: string;
   projectTypeCode?: string;
   currentNodeCode: string;
@@ -235,8 +243,8 @@ export interface DocProjectWorkspace {
 }
 
 export interface DocProjectBalanceAdjustment {
-  id: number;
-  projectId: number;
+  id: DocmanId;
+  projectId: DocmanId;
   materialPrice?: number;
   balanceRemark?: string;
   status?: string;
@@ -245,7 +253,7 @@ export interface DocProjectBalanceAdjustment {
 }
 
 export interface DocProjectBalanceAdjustmentForm {
-  id?: number;
+  id?: DocmanId;
   projectId?: string | number;
   materialPrice?: number;
   balanceRemark?: string;
@@ -253,7 +261,7 @@ export interface DocProjectBalanceAdjustmentForm {
 }
 
 export interface DocProjectType {
-  id: number;
+  id: DocmanId;
   code: string;
   name: string;
   customerType: string;
@@ -263,7 +271,7 @@ export interface DocProjectType {
 }
 
 export interface DocProjectTypeForm {
-  id?: number;
+  id?: DocmanId;
   code: string;
   name: string;
   customerType: string;
@@ -273,7 +281,7 @@ export interface DocProjectTypeForm {
 }
 
 export interface DocWorkflowNodeTaskForm {
-  id?: number;
+  id?: DocmanId;
   taskCode: string;
   taskName: string;
   taskType: string;
@@ -287,7 +295,7 @@ export interface DocWorkflowNodeTaskForm {
 }
 
 export interface DocWorkflowTemplateNodeForm {
-  id?: number;
+  id?: DocmanId;
   nodeCode: string;
   nodeName: string;
   sortOrder?: number;
@@ -297,7 +305,7 @@ export interface DocWorkflowTemplateNodeForm {
 }
 
 export interface DocWorkflowTemplate {
-  id: number;
+  id: DocmanId;
   code: string;
   name: string;
   projectTypeCode: string;
@@ -309,7 +317,7 @@ export interface DocWorkflowTemplate {
 }
 
 export interface DocWorkflowTemplateForm {
-  id?: number;
+  id?: DocmanId;
   code: string;
   name: string;
   projectTypeCode: string;
@@ -321,8 +329,8 @@ export interface DocWorkflowTemplateForm {
 }
 
 export interface DocArchivePackage {
-  id: number;
-  projectId: number;
+  id: DocmanId;
+  projectId: DocmanId;
   archiveNo: string;
   archiveVersion: number;
   nasArchivePath: string;

@@ -52,6 +52,7 @@ describe('docman admin util', () => {
   it('protects built-in super admin user and normalizes admin form', () => {
     expect(canMutateAdminUser({ userId: 1 } as any)).toBe(false);
     expect(canMutateAdminUser({ userId: 2 } as any)).toBe(true);
+    expect(normalizeAdminForm({ userId: 3, id: 9 } as any).userId).toBe('3');
     expect(normalizeAdminForm({ userName: 'admin01', roleIds: ['2'] })).toEqual({
       userId: undefined,
       id: undefined,

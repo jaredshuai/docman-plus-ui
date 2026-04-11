@@ -11,7 +11,7 @@ interface ApiEnvelope<T> {
 
 interface UserInfoEnvelope {
   user: {
-    userId: number;
+    userId: string | number;
   };
 }
 
@@ -43,9 +43,17 @@ async function requestJson<T>(page: Page, path: string, options: { method?: 'GET
   return body.data;
 }
 
-export async function getCurrentUserId(page: Page): Promise<number> {
+export async function requestDocmanJson<T>(
+  page: Page,
+  path: string,
+  options: { method?: 'GET' | 'POST' | 'DELETE'; data?: unknown } = {}
+): Promise<T> {
+  return await requestJson<T>(page, path, options);
+}
+
+export async function getCurrentUserId(page: Page): Promise<string> {
   const data = await requestJson<UserInfoEnvelope>(page, '/system/user/getInfo');
-  return data.user.userId;
+  return String(data.user.userId);
 }
 
 function escapeRegExp(value: string): string {
@@ -63,7 +71,7 @@ async function findProjectIdByName(page: Page, projectName: string): Promise<str
   );
   expect(response.ok(), 'project list should return success HTTP status').toBeTruthy();
   const raw = await response.text();
-  const matcher = new RegExp(`"id":([0-9]+)[^{}]*"name":"${escapeRegExp(projectName)}"`, 'g');
+  const matcher = new RegExp(`"id":"?([0-9]+)"?[^{}]*"name":"${escapeRegExp(projectName)}"`, 'g');
   const match = matcher.exec(raw);
   expect(match, 'project list should contain created project').not.toBeNull();
   return match![1];
@@ -96,4 +104,19 @@ export async function createTempProject(page: Page, projectName: string): Promis
 
 export async function deleteProject(page: Page, projectId: string): Promise<void> {
   await requestJson<void>(page, `/docman/project/${projectId}`, { method: 'DELETE' });
+}
+
+export async function getWorkspace(page: Page, projectId: string): Promise<any> {
+  return await requestJson<any>(page, `/docman/project/${projectId}/workspace`);
+}
+
+export async function completeProjectTask(page: Page, projectId: string, taskRuntimeId: string | number): Promise<void> {
+  await requestJson<void>(page, `/docman/project/${projectId}/node-task/${taskRuntimeId}/complete`, { method: 'POST', data: {} });
+}
+
+export async function advanceProjectNode(page: Page, projectId: string, currentNodeCode: string): Promise<void> {
+  await requestJson<void>(page, `/docman/project/${projectId}/node/advance`, {
+    method: 'POST',
+    data: { currentNodeCode }
+  });
 }

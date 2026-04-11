@@ -48,7 +48,7 @@ export function normalizeDictDataForm(dictType = '', form: Partial<DictDataForm>
     dictLabel: form.dictLabel || '',
     dictValue: form.dictValue || '',
     cssClass: form.cssClass || '',
-    listClass: form.listClass || '',
+    listClass: form.listClass || 'primary',
     dictSort: form.dictSort ?? 1,
     remark: form.remark || ''
   };

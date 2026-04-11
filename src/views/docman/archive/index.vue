@@ -96,7 +96,7 @@
 import { ref, toRefs, getCurrentInstance, ComponentInternalInstance } from 'vue';
 import { useRoute } from 'vue-router';
 import { getArchive, archiveProject, listArchive, downloadArchive } from '@/api/docman/archive';
-import { DocArchivePackage } from '@/api/docman/types';
+import { DocArchivePackage, DocmanId } from '@/api/docman/types';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { useRouteProjectId } from '@/hooks/useRouteProjectId';
 
@@ -159,7 +159,7 @@ const handleArchive = async () => {
 };
 
 /** 下载归档包 */
-const handleDownload = (archiveId: number) => {
+const handleDownload = (archiveId: DocmanId) => {
   downloadArchive(archiveId);
 };
 

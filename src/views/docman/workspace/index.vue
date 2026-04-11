@@ -324,9 +324,11 @@ import { downloadDocument } from '@/api/docman/document';
 import { listProjectDrawings, saveProjectDrawing } from '@/api/docman/drawing';
 import { listProjectVisas, saveProjectVisa } from '@/api/docman/visa';
 import type {
+  DocmanId,
   DocProjectAddRecord,
   DocProjectDrawing,
   DocProjectDrawingForm,
+  DocProjectNodeTaskRuntime,
   DocProjectVisa,
   DocProjectVisaForm,
   DocProjectWorkspace
@@ -343,7 +345,7 @@ const workspace = ref<DocProjectWorkspace>();
 const workloadRecords = ref<DocProjectAddRecord[]>([]);
 const drawings = ref<DocProjectDrawing[]>([]);
 const visas = ref<DocProjectVisa[]>([]);
-const taskActionLoadingId = ref<number>();
+const taskActionLoadingId = ref<DocmanId>();
 const estimateLoading = ref(false);
 const exportLoading = ref(false);
 
@@ -351,7 +353,7 @@ const drawingDialog = reactive({ open: false });
 const visaDialog = reactive({ open: false });
 
 const drawingForm = reactive<DocProjectDrawingForm>({
-  projectId: 0,
+  projectId: '',
   drawingCode: '',
   orderSerialNo: '',
   workContent: '',
@@ -360,7 +362,7 @@ const drawingForm = reactive<DocProjectDrawingForm>({
 });
 
 const visaForm = reactive<DocProjectVisaForm>({
-  projectId: 0,
+  projectId: '',
   reason: '',
   contentBasis: '',
   amount: 0,
@@ -407,7 +409,7 @@ async function loadAll() {
   }
 }
 
-async function handleCompleteTask(taskRuntimeId: number) {
+async function handleCompleteTask(taskRuntimeId: DocmanId) {
   if (!hasProjectId.value) return;
   taskActionLoadingId.value = taskRuntimeId;
   try {
@@ -421,7 +423,7 @@ async function handleCompleteTask(taskRuntimeId: number) {
   }
 }
 
-function handleTaskAction(task: { id: number; taskCode?: string; taskType?: string }) {
+function handleTaskAction(task: Pick<DocProjectNodeTaskRuntime, 'id' | 'taskCode' | 'taskType'>) {
   if (isRedirectTask(task)) {
     if (task.taskCode === 'project_info_fill') {
       handleOpenProjectEdit();
@@ -447,7 +449,7 @@ function handleTaskAction(task: { id: number; taskCode?: string; taskType?: stri
   handleCompleteTask(task.id);
 }
 
-async function handleTriggerTask(taskId: number) {
+async function handleTriggerTask(taskId: DocmanId) {
   if (!hasProjectId.value) return;
   taskActionLoadingId.value = taskId;
   try {
@@ -505,7 +507,7 @@ function handleOpenDocumentCenter() {
   router.push({ path: '/docman/document', query: { projectId: String(projectId.value) } });
 }
 
-function handleDownloadArtifact(id?: number) {
+function handleDownloadArtifact(id?: DocmanId) {
   if (!id) return;
   downloadDocument(id);
 }
@@ -545,7 +547,7 @@ async function handleSaveDrawing() {
     await saveProjectDrawing({ ...drawingForm, projectId: projectId.value });
     ElMessage.success('图纸保存成功');
     drawingDialog.open = false;
-    Object.assign(drawingForm, { projectId: 0, drawingCode: '', orderSerialNo: '', workContent: '', includeInProject: true, remark: '' });
+    Object.assign(drawingForm, { projectId: '', drawingCode: '', orderSerialNo: '', workContent: '', includeInProject: true, remark: '' });
     await loadAll();
   } catch (error) {
     handleApiError(error, '图纸保存失败');
@@ -558,7 +560,7 @@ async function handleSaveVisa() {
     await saveProjectVisa({ ...visaForm, projectId: projectId.value });
     ElMessage.success('签证保存成功');
     visaDialog.open = false;
-    Object.assign(visaForm, { projectId: 0, reason: '', contentBasis: '', amount: 0, visaDate: '', includeInProject: true, remark: '' });
+    Object.assign(visaForm, { projectId: '', reason: '', contentBasis: '', amount: 0, visaDate: '', includeInProject: true, remark: '' });
     await loadAll();
   } catch (error) {
     handleApiError(error, '签证保存失败');

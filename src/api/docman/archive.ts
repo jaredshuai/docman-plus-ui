@@ -1,6 +1,6 @@
 import request from '@/utils/request';
 import { AxiosPromise } from 'axios';
-import { DocArchivePackage } from './types';
+import { DocArchivePackage, DocmanId } from './types';
 import download from '@/plugins/download';
 
 /**
@@ -40,6 +40,6 @@ export function listArchive(projectId: string | number): AxiosPromise<DocArchive
  * 下载归档包
  * @param archiveId 归档ID
  */
-export function downloadArchive(archiveId: number): void {
+export function downloadArchive(archiveId: DocmanId): void {
   download.zip(`/docman/archive/${archiveId}/download`, `archive_${archiveId}.zip`);
 }

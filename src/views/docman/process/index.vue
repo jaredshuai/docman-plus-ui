@@ -30,8 +30,8 @@
       <div v-else>
         <el-descriptions :column="3" border>
           <el-descriptions-item label="流程状态">
-            <el-tag :type="proxy?.selectDictLabel(doc_process_status.value, processConfig.status)?.cssClass || 'info'">
-              {{ proxy?.selectDictLabel(doc_process_status.value, processConfig.status)?.label || processConfig.status }}
+            <el-tag :type="resolveDictTagType(doc_process_status, processConfig.status)">
+              {{ resolveDictLabel(doc_process_status, processConfig.status, processConfig.status || '-') }}
             </el-tag>
           </el-descriptions-item>
           <el-descriptions-item label="流程定义ID">{{ processConfig.definitionId }}</el-descriptions-item>
@@ -92,6 +92,7 @@ import { ElMessage } from 'element-plus';
 import { DocProcessConfig } from '@/api/docman/types';
 import { handleApiError } from '@/utils/error';
 import { useRouteProjectId } from '@/hooks/useRouteProjectId';
+import { resolveDictLabel, resolveDictTagType } from '../docmanDict.util';
 import { canStartProcess, canTriggerPlugin, interventionRiskText } from './processIntervention.util';
 
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;

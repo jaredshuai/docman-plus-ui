@@ -25,15 +25,15 @@
       <el-table-column prop="fileName" label="文件名" min-width="200" />
       <el-table-column prop="sourceType" label="来源" width="120">
         <template #default="{ row }">
-          <el-tag :type="proxy?.selectDictLabel(doc_source_type.value, row.sourceType)?.cssClass || 'info'" size="small">
-            {{ proxy?.selectDictLabel(doc_source_type.value, row.sourceType)?.label || row.sourceType }}
+          <el-tag :type="resolveDictTagType(doc_source_type, row.sourceType)" size="small">
+            {{ resolveDictLabel(doc_source_type, row.sourceType, row.sourceType || '-') }}
           </el-tag>
         </template>
       </el-table-column>
       <el-table-column prop="status" label="状态" width="100">
         <template #default="{ row }">
-          <el-tag :type="proxy?.selectDictLabel(doc_document_status.value, row.status)?.cssClass || 'info'" size="small">
-            {{ proxy?.selectDictLabel(doc_document_status.value, row.status)?.label || row.status }}
+          <el-tag :type="resolveDictTagType(doc_document_status, row.status)" size="small">
+            {{ resolveDictLabel(doc_document_status, row.status, row.status || '-') }}
           </el-tag>
         </template>
       </el-table-column>
@@ -87,6 +87,7 @@ import { DocDocumentRecord, DocDocumentQuery } from '@/api/docman/types';
 import { ElMessage, ElMessageBox, UploadInstance, UploadRequestOptions } from 'element-plus';
 import { handleApiError } from '@/utils/error';
 import { useRouteProjectId } from '@/hooks/useRouteProjectId';
+import { resolveDictLabel, resolveDictTagType } from '../docmanDict.util';
 
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 const { doc_source_type, doc_document_status } = toRefs(proxy?.useDict('doc_source_type', 'doc_document_status') ?? {});
@@ -138,7 +139,7 @@ const handleDownload = (row: DocDocumentRecord) => {
 const handlePreview = async (row: DocDocumentRecord) => {
   try {
     const res = await getDocumentViewerUrl(row.id);
-    const viewerUrl = res?.data?.url;
+    const viewerUrl = res?.url;
     if (!viewerUrl) {
       ElMessage.error('在线预览地址获取失败');
       return;

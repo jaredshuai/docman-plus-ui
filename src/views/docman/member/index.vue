@@ -14,8 +14,8 @@
         <el-table-column prop="userId" label="用户ID" width="120" />
         <el-table-column prop="roleType" label="角色" width="120">
           <template #default="{ row }">
-            <el-tag :type="proxy?.selectDictLabel(doc_member_role.value, row.roleType)?.cssClass || 'info'">
-              {{ proxy?.selectDictLabel(doc_member_role.value, row.roleType)?.label || row.roleType }}
+            <el-tag :type="resolveDictTagType(doc_member_role, row.roleType)">
+              {{ resolveDictLabel(doc_member_role, row.roleType, row.roleType || '-') }}
             </el-tag>
           </template>
         </el-table-column>
@@ -54,12 +54,14 @@ import { useRoute } from 'vue-router';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { listMembers, addMember, removeMember, type DocProjectMember, type DocProjectMemberBo } from '@/api/docman/member';
 import { handleApiError } from '@/utils/error';
+import { resolvePathProjectId } from '../inputLine/inputLine.util';
+import { resolveDictLabel, resolveDictTagType } from '../docmanDict.util';
 
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 const { doc_member_role } = toRefs(proxy?.useDict('doc_member_role') ?? {});
 
 const route = useRoute();
-const projectId = Number(route.params.projectId);
+const projectId = resolvePathProjectId(route.params.projectId) || '';
 
 const loading = ref<boolean>(false);
 const submitLoading = ref<boolean>(false);
