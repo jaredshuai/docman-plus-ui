@@ -154,7 +154,20 @@ service.interceptors.response.use(
     if (status === HttpStatus.UNAUTHORIZED) {
       return redirectToLogin();
     }
+    const responseData = error?.response?.data;
     let { message } = error;
+    if (responseData?.msg) {
+      message = responseData.msg;
+    } else if (typeof responseData === 'string') {
+      try {
+        const parsed = JSON.parse(responseData);
+        if (parsed?.msg) {
+          message = parsed.msg;
+        }
+      } catch {
+        // ignore invalid non-JSON response bodies
+      }
+    }
     if (message == 'Network Error') {
       message = '后端接口连接异常';
     } else if (message.includes('timeout')) {

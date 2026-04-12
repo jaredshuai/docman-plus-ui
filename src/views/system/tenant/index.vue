@@ -69,20 +69,40 @@
         </el-table-column>
         <el-table-column label="租户状态" align="center" prop="status">
           <template #default="scope">
-            <el-switch v-model="scope.row.status" active-value="0" inactive-value="1" @change="handleStatusChange(scope.row)"></el-switch>
+            <el-switch
+              v-model="scope.row.status"
+              active-value="0"
+              inactive-value="1"
+              :disabled="isManagementTenant(scope.row)"
+              @change="handleStatusChange(scope.row)"
+            ></el-switch>
           </template>
         </el-table-column>
         <el-table-column width="150" label="操作" align="center" fixed="right" class-name="small-padding fixed-width">
           <template #default="scope">
             <el-tooltip content="修改" placement="top">
-              <el-button v-hasPermi="['system:tenant:edit']" link type="primary" icon="Edit" @click="handleUpdate(scope.row)"></el-button>
+              <el-button
+                v-hasPermi="['system:tenant:edit']"
+                link
+                type="primary"
+                icon="Edit"
+                :disabled="isManagementTenant(scope.row)"
+                @click="handleUpdate(scope.row)"
+              ></el-button>
             </el-tooltip>
             <el-tooltip content="同步套餐" placement="top">
               <el-button v-hasPermi="['system:tenant:edit']" link type="primary" icon="Refresh" @click="handleSyncTenantPackage(scope.row)">
               </el-button>
             </el-tooltip>
             <el-tooltip content="删除" placement="top">
-              <el-button v-hasPermi="['system:tenant:remove']" link type="primary" icon="Delete" @click="handleDelete(scope.row)"></el-button>
+              <el-button
+                v-hasPermi="['system:tenant:remove']"
+                link
+                type="primary"
+                icon="Delete"
+                :disabled="isManagementTenant(scope.row)"
+                @click="handleDelete(scope.row)"
+              ></el-button>
             </el-tooltip>
           </template>
         </el-table-column>
@@ -175,7 +195,9 @@ const showSearch = ref(true);
 const ids = ref<Array<string | number>>([]);
 const single = ref(true);
 const multiple = ref(true);
+const selectedManagementTenant = ref(false);
 const total = ref(0);
+const MANAGEMENT_TENANT_ID = '000000';
 
 const queryFormRef = ref<ElFormInstance>();
 const tenantFormRef = ref<ElFormInstance>();
@@ -232,6 +254,8 @@ const data = reactive<PageData<TenantForm, TenantQuery>>({
 
 const { queryParams, form, rules } = toRefs(data);
 
+const isManagementTenant = (row?: Partial<TenantVO>) => String(row?.tenantId ?? '') === MANAGEMENT_TENANT_ID;
+
 /** 查询所有租户套餐 */
 const getTenantPackage = async () => {
   const res = await selectTenantPackage();
@@ -249,6 +273,11 @@ const getList = async () => {
 
 // 租户套餐状态修改
 const handleStatusChange = async (row: TenantVO) => {
+  if (isManagementTenant(row)) {
+    row.status = row.status === '0' ? '1' : '0';
+    proxy?.$modal.msgWarning('不允许操作管理租户');
+    return;
+  }
   const text = row.status === '0' ? '启用' : '停用';
   try {
     await proxy?.$modal.confirm('确认要"' + text + '""' + row.companyName + '"租户吗？');
@@ -286,8 +315,9 @@ const resetQuery = () => {
 // 多选框选中数据
 const handleSelectionChange = (selection: TenantVO[]) => {
   ids.value = selection.map((item) => item.id);
-  single.value = selection.length != 1;
-  multiple.value = !selection.length;
+  selectedManagementTenant.value = selection.some((item) => isManagementTenant(item));
+  single.value = selection.length != 1 || selectedManagementTenant.value;
+  multiple.value = !selection.length || selectedManagementTenant.value;
 };
 
 /** 新增按钮操作 */
@@ -300,10 +330,18 @@ const handleAdd = () => {
 
 /** 修改按钮操作 */
 const handleUpdate = async (row?: TenantVO) => {
+  if (row && isManagementTenant(row)) {
+    proxy?.$modal.msgWarning('不允许操作管理租户');
+    return;
+  }
   reset();
   await getTenantPackage();
   const _id = row?.id || ids.value[0];
   const res = await getTenant(_id);
+  if (isManagementTenant(res.data)) {
+    proxy?.$modal.msgWarning('不允许操作管理租户');
+    return;
+  }
   Object.assign(form.value, res.data);
   dialog.visible = true;
   dialog.title = '修改租户';
@@ -328,6 +366,10 @@ const submitForm = () => {
 
 /** 删除按钮操作 */
 const handleDelete = async (row?: TenantVO) => {
+  if (row && isManagementTenant(row)) {
+    proxy?.$modal.msgWarning('不允许操作管理租户');
+    return;
+  }
   const _ids = row?.id || ids.value;
   await proxy?.$modal.confirm('是否确认删除租户编号为"' + _ids + '"的数据项？');
   loading.value = true;
