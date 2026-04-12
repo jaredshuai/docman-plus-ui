@@ -55,11 +55,11 @@ export const FORM_FILL_PRESETS: TaskPreset[] = [
     description: '签证线字段组'
   },
   {
-    label: '工作量录入',
+    label: '图纸下工作量录入',
     value: 'workload_input',
     taskCode: 'workload_fill',
-    taskName: '录入工作量记录',
-    description: '工作量线字段组'
+    taskName: '录入图纸工作量',
+    description: '图纸下工作量字段组'
   }
 ];
 
@@ -114,8 +114,9 @@ export const FIELD_GROUP_REFERENCES: FieldGroupReference[] = [
   },
   {
     value: 'workload_input',
-    label: '工作量线字段组',
-    fields: ['estimatedPrice', 'enable', 'remark', 'details.name', 'details.alias', 'details.price', 'details.remark']
+    label: '图纸下工作量字段组',
+    fields: ['drawingId', 'workItemCode', 'workItemName', 'category', 'unit', 'quantity', 'includeInEstimate', 'remark'],
+    completionRule: 'workload_exists'
   },
   {
     value: 'estimate_run',

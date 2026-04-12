@@ -15,6 +15,19 @@
           <el-descriptions-item label="项目名称">{{ workspace.projectName }}</el-descriptions-item>
           <el-descriptions-item label="项目类型">{{ workspace.projectTypeCode || '-' }}</el-descriptions-item>
           <el-descriptions-item label="运行状态">{{ workspace.runtimeStatus }}</el-descriptions-item>
+          <el-descriptions-item label="客户类型">
+            {{ resolveDictLabel(doc_customer_type, projectDetail?.customerType, projectDetail?.customerType || '-') }}
+          </el-descriptions-item>
+          <el-descriptions-item label="业务类型">
+            {{ resolveDictLabel(doc_business_type, projectDetail?.businessType, projectDetail?.businessType || '-') }}
+          </el-descriptions-item>
+          <el-descriptions-item label="负责人">{{ projectDetail?.ownerName || '-' }}</el-descriptions-item>
+          <el-descriptions-item label="文档分类">{{ projectDetail?.documentCategory || '-' }}</el-descriptions-item>
+          <el-descriptions-item label="电信编号">{{ projectDetail?.telecomCode || '-' }}</el-descriptions-item>
+          <el-descriptions-item label="翔云编号">{{ projectDetail?.xiangyunCode || '-' }}</el-descriptions-item>
+          <el-descriptions-item label="电信立项时间">{{ projectDetail?.telecomProjectDate || '-' }}</el-descriptions-item>
+          <el-descriptions-item label="计划开工时间">{{ projectDetail?.planStartDate || '-' }}</el-descriptions-item>
+          <el-descriptions-item label="计划完工时间">{{ projectDetail?.planEndDate || '-' }}</el-descriptions-item>
           <el-descriptions-item label="当前节点">{{ workspace.currentNodeName }}</el-descriptions-item>
           <el-descriptions-item label="图纸数量 / 计入口径">
             {{ workspace.drawingCount }} / {{ workspace.includedDrawingCount ?? workspace.drawingCount }}
@@ -22,11 +35,12 @@
           <el-descriptions-item label="签证数量 / 计入口径">
             {{ workspace.visaCount }} / {{ workspace.includedVisaCount ?? workspace.visaCount }}
           </el-descriptions-item>
+          <el-descriptions-item label="备注" :span="3">{{ projectDetail?.remark || '-' }}</el-descriptions-item>
         </el-descriptions>
 
         <div class="mt16" v-if="workspace">
           <el-space wrap>
-            <el-button type="warning" plain @click="handleOpenWorkload" v-hasPermi="['docman:project:query']">工作量录入</el-button>
+            <el-button type="warning" plain @click="handleOpenWorkload" v-hasPermi="['docman:project:query']">图纸/工作量录入</el-button>
             <el-button type="primary" @click="drawingDialog.open = true" v-hasPermi="['docman:project:edit']">录入图纸</el-button>
             <el-button type="success" @click="visaDialog.open = true" v-hasPermi="['docman:project:edit']">录入签证</el-button>
             <el-button
@@ -202,21 +216,21 @@
           <el-card>
             <template #header>工作量汇总</template>
             <el-descriptions :column="4" border size="small">
-              <el-descriptions-item label="记录数">
-                {{ workloadSummary.totalRecords }}
+              <el-descriptions-item label="工作量项数">
+                {{ workloadSummary.totalItems }}
               </el-descriptions-item>
-              <el-descriptions-item label="启用记录">
-                {{ workloadSummary.enabledRecords }}
+              <el-descriptions-item label="计入估算项数">
+                {{ workloadSummary.includedItems }}
               </el-descriptions-item>
-              <el-descriptions-item label="预估价格合计">
-                {{ workloadSummary.totalEstimatedPrice || '-' }}
+              <el-descriptions-item label="数量合计">
+                {{ workloadSummary.totalQuantity || '-' }}
               </el-descriptions-item>
-              <el-descriptions-item label="最新明细">
+              <el-descriptions-item label="最近条目">
                 {{ workloadSummary.latestDetailSummary || '-' }}
               </el-descriptions-item>
             </el-descriptions>
             <el-space style="margin-top: 12px" wrap>
-              <el-button type="primary" plain @click="handleOpenWorkload" v-hasPermi="['docman:project:query']">进入工作量录入</el-button>
+              <el-button type="primary" plain @click="handleOpenWorkload" v-hasPermi="['docman:project:query']">进入图纸/工作量录入</el-button>
             </el-space>
           </el-card>
         </el-col>
@@ -306,12 +320,11 @@
 </template>
 
 <script setup lang="ts">
-import { computed, reactive, ref } from 'vue';
+import { computed, getCurrentInstance, reactive, ref, toRefs, type ComponentInternalInstance } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { ElMessage } from 'element-plus';
 import { handleApiError } from '@/utils/error';
 import { useRouteProjectId } from '@/hooks/useRouteProjectId';
-import { listProjectAddRecords } from '@/api/docman/addRecord';
 import {
   advanceProjectNode,
   completeProjectTask,
@@ -322,18 +335,25 @@ import {
 } from '@/api/docman/workspace';
 import { downloadDocument } from '@/api/docman/document';
 import { listProjectDrawings, saveProjectDrawing } from '@/api/docman/drawing';
+import { listProjectDrawingWorkItems } from '@/api/docman/drawingWorkItem';
+import { getProject } from '@/api/docman/project';
 import { listProjectVisas, saveProjectVisa } from '@/api/docman/visa';
 import type {
   DocmanId,
-  DocProjectAddRecord,
+  DocProject,
   DocProjectDrawing,
+  DocProjectDrawingWorkItem,
   DocProjectDrawingForm,
   DocProjectNodeTaskRuntime,
   DocProjectVisa,
   DocProjectVisaForm,
   DocProjectWorkspace
 } from '@/api/docman/types';
+import { resolveDictLabel } from '../docmanDict.util';
 import { isRedirectTask, resolvePluginTaskLabel, summarizeWorkload } from './workspace.util';
+
+const { proxy } = getCurrentInstance() as ComponentInternalInstance;
+const { doc_customer_type, doc_business_type } = toRefs<any>(proxy?.useDict('doc_customer_type', 'doc_business_type') ?? {});
 
 const route = useRoute();
 const router = useRouter();
@@ -341,8 +361,9 @@ const { projectId, hasProjectId } = useRouteProjectId(route);
 
 const loading = ref(false);
 const loadError = ref('');
+const projectDetail = ref<DocProject>();
 const workspace = ref<DocProjectWorkspace>();
-const workloadRecords = ref<DocProjectAddRecord[]>([]);
+const workloadItems = ref<DocProjectDrawingWorkItem[]>([]);
 const drawings = ref<DocProjectDrawing[]>([]);
 const visas = ref<DocProjectVisa[]>([]);
 const taskActionLoadingId = ref<DocmanId>();
@@ -379,12 +400,13 @@ const showEstimateTrigger = computed(() => canTriggerEstimate.value || Boolean(e
 const canTriggerExport = computed(() => Boolean(workspace.value?.exportTriggerReady));
 const exportTriggerBlockedReason = computed(() => workspace.value?.exportTriggerBlockedReason || '');
 const showExportTrigger = computed(() => canTriggerExport.value || Boolean(exportTriggerBlockedReason.value));
-const workloadSummary = computed(() => summarizeWorkload(workloadRecords.value));
+const workloadSummary = computed(() => summarizeWorkload(workloadItems.value));
 
 async function loadAll() {
   if (!hasProjectId.value) {
     workspace.value = undefined;
-    workloadRecords.value = [];
+    projectDetail.value = undefined;
+    workloadItems.value = [];
     drawings.value = [];
     visas.value = [];
     return;
@@ -392,14 +414,16 @@ async function loadAll() {
   loading.value = true;
   loadError.value = '';
   try {
-    const [workspaceRes, workloadRes, drawingRes, visaRes] = await Promise.all([
+    const [workspaceRes, projectRes, workloadRes, drawingRes, visaRes] = await Promise.all([
       getProjectWorkspace(projectId.value),
-      listProjectAddRecords(projectId.value),
+      getProject(projectId.value),
+      listProjectDrawingWorkItems(projectId.value),
       listProjectDrawings(projectId.value),
       listProjectVisas(projectId.value)
     ]);
     workspace.value = workspaceRes.data;
-    workloadRecords.value = workloadRes.data || [];
+    projectDetail.value = projectRes;
+    workloadItems.value = workloadRes.data || [];
     drawings.value = drawingRes.data;
     visas.value = visaRes.data;
   } catch (error) {
@@ -514,7 +538,7 @@ function handleDownloadArtifact(id?: DocmanId) {
 
 function handleOpenWorkload() {
   if (!hasProjectId.value) return;
-  router.push(`/docman/workload/${projectId.value}`);
+  router.push(`/docman/drawing/${projectId.value}`);
 }
 
 function handleOpenBalance() {
