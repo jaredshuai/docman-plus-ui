@@ -136,48 +136,6 @@ export interface DocProjectDrawingWorkItemForm {
   remark?: string;
 }
 
-export interface DocProjectAddRecordDetail {
-  id?: DocmanId;
-  projectId: DocmanId;
-  projectAddRecordId?: DocmanId;
-  name?: string;
-  alias?: string;
-  price?: number;
-  remark?: string;
-  createTime?: string;
-  updateTime?: string;
-}
-
-export interface DocProjectAddRecord {
-  id?: DocmanId;
-  projectId: DocmanId;
-  enable?: boolean;
-  estimatedPrice?: number;
-  remark?: string;
-  details?: DocProjectAddRecordDetail[];
-  createTime?: string;
-  updateTime?: string;
-}
-
-export interface DocProjectAddRecordDetailForm {
-  id?: DocmanId;
-  projectId: string | number;
-  projectAddRecordId?: DocmanId;
-  name?: string;
-  alias?: string;
-  price?: number;
-  remark?: string;
-}
-
-export interface DocProjectAddRecordForm {
-  id?: DocmanId;
-  projectId: string | number;
-  enable?: boolean;
-  estimatedPrice?: number;
-  remark?: string;
-  details?: DocProjectAddRecordDetailForm[];
-}
-
 export interface DocProjectVisa {
   id: DocmanId;
   projectId: DocmanId;

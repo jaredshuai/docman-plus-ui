@@ -2,6 +2,10 @@ import { expect, test } from '@playwright/test';
 import { DOCMAN_URLS, login } from '../helpers/auth';
 import { createTempProject, deleteProject } from '../helpers/docman';
 
+function successToast(page: import('@playwright/test').Page, text: string) {
+  return page.locator('.el-message__content').filter({ hasText: text }).last();
+}
+
 test.describe('P1 图纸下工作量真实流程', () => {
   test('可以在图纸页维护图纸下的工作量项', async ({ page }) => {
     const projectName = `pw-e2e-workload-project-${Date.now()}`;
@@ -49,7 +53,7 @@ test.describe('P1 图纸下工作量真实流程', () => {
       });
       await editorDialog.getByRole('button', { name: /确\s*定/ }).click();
       expect((await saveWorkItemResponse).ok()).toBeTruthy();
-      await expect(page.getByText('新增成功', { exact: true })).toBeVisible({ timeout: 10000 });
+      await expect(successToast(page, '新增成功')).toBeVisible({ timeout: 10000 });
       await expect(workItemDialog.getByTestId('drawing-workitem-table')).toContainText(workItemName, { timeout: 15000 });
 
       await workItemDialog.getByRole('button', { name: '编辑' }).first().click();
@@ -61,7 +65,7 @@ test.describe('P1 图纸下工作量真实流程', () => {
       });
       await editDialog.getByRole('button', { name: /确\s*定/ }).click();
       expect((await updateWorkItemResponse).ok()).toBeTruthy();
-      await expect(page.getByText('修改成功', { exact: true })).toBeVisible({ timeout: 10000 });
+      await expect(successToast(page, '修改成功')).toBeVisible({ timeout: 10000 });
       await expect(workItemDialog.getByTestId('drawing-workitem-table')).toContainText(`${workItemName}-编辑`, { timeout: 15000 });
 
       const deleteWorkItemResponse = page.waitForResponse((response) => {
@@ -72,7 +76,7 @@ test.describe('P1 图纸下工作量真实流程', () => {
       await expect(confirmDialog).toBeVisible({ timeout: 10000 });
       await confirmDialog.getByRole('button', { name: '确定' }).click();
       expect((await deleteWorkItemResponse).ok()).toBeTruthy();
-      await expect(page.getByText('删除成功', { exact: true })).toBeVisible({ timeout: 10000 });
+      await expect(successToast(page, '删除成功')).toBeVisible({ timeout: 10000 });
     } finally {
       await deleteProject(page, project.id).catch(() => undefined);
     }
