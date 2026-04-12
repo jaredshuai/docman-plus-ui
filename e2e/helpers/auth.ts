@@ -46,7 +46,6 @@ export const DOCMAN_URLS = {
   plugin: resolveAppUrl('/docman/plugin'),
   member: resolveAppUrl('/docman/member'),
   nodeDeadline: resolveAppUrl('/docman/nodedeadline'),
-  workload: resolveAppUrl('/docman/workload'),
   drawing: resolveAppUrl('/docman/drawing'),
   visa: resolveAppUrl('/docman/visa')
 };

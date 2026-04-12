@@ -80,35 +80,78 @@
         </template>
       </el-dialog>
 
-      <el-dialog v-model="workItemDialog.visible" :title="workItemDialog.title" width="860px" append-to-body data-testid="drawing-workitem-dialog">
+      <el-dialog
+        v-model="workItemDialog.visible"
+        :title="workItemDialog.title"
+        fullscreen
+        append-to-body
+        :close-on-click-modal="false"
+        class="drawing-detail-dialog"
+        data-testid="drawing-workitem-dialog"
+        @closed="resetDrawingDetail"
+      >
         <el-alert v-if="workItemLoadError" :title="workItemLoadError" type="warning" show-icon :closable="false" style="margin-bottom: 16px" />
-        <el-space style="margin-bottom: 16px" wrap>
-          <span>当前图纸：{{ workItemDialog.drawingCode || '-' }}</span>
-          <el-button type="primary" plain @click="handleAddWorkItem" v-hasPermi="['docman:project:edit']">新增工作量项</el-button>
-        </el-space>
-        <el-table v-loading="workItemLoading" :data="workItems" border stripe data-testid="drawing-workitem-table">
-          <el-table-column prop="workItemName" label="工作量名称" min-width="160" />
-          <el-table-column prop="workItemCode" label="编码" min-width="120" />
-          <el-table-column prop="category" label="分类" min-width="120" />
-          <el-table-column prop="unit" label="单位" width="90" />
-          <el-table-column prop="quantity" label="数量" width="110" />
-          <el-table-column label="计入估算" width="100" align="center">
-            <template #default="{ row }">
-              <el-tag :type="row.includeInEstimate ? 'success' : 'info'" size="small">
-                {{ row.includeInEstimate ? '是' : '否' }}
-              </el-tag>
+        <div class="drawing-detail-shell">
+          <div class="drawing-detail-header">
+            <div class="drawing-detail-header__meta">
+              <h3 class="drawing-detail-header__title">{{ drawingDetailTitle }}</h3>
+              <p class="drawing-detail-header__subtitle">图纸详情完整覆盖当前列表层，工作量属于图纸详情的一部分。</p>
+            </div>
+            <el-space wrap>
+              <el-button @click="workItemDialog.visible = false">返回图纸列表</el-button>
+              <el-button type="primary" plain @click="handleAddWorkItem" v-hasPermi="['docman:project:edit']">新增工作量项</el-button>
+              <el-button plain @click="handleEditSelectedDrawing" v-hasPermi="['docman:project:edit']">修改图纸</el-button>
+              <el-button type="danger" plain @click="handleDeleteSelectedDrawing" v-hasPermi="['docman:project:remove']">移除图纸</el-button>
+            </el-space>
+          </div>
+
+          <el-card shadow="never" class="drawing-detail-card">
+            <el-descriptions :column="2" border>
+              <el-descriptions-item label="图号">{{ selectedDrawing?.drawingCode || '-' }}</el-descriptions-item>
+              <el-descriptions-item label="订单流水号">{{ selectedDrawing?.orderSerialNo || '-' }}</el-descriptions-item>
+              <el-descriptions-item label="计入项目">
+                <el-tag :type="selectedDrawing?.includeInProject ? 'success' : 'info'" size="small">
+                  {{ selectedDrawing?.includeInProject ? '是' : '否' }}
+                </el-tag>
+              </el-descriptions-item>
+              <el-descriptions-item label="创建时间">{{ selectedDrawing?.createTime || '-' }}</el-descriptions-item>
+              <el-descriptions-item label="工作内容" :span="2">{{ selectedDrawing?.workContent || '-' }}</el-descriptions-item>
+              <el-descriptions-item label="备注" :span="2">{{ selectedDrawing?.remark || '-' }}</el-descriptions-item>
+            </el-descriptions>
+          </el-card>
+
+          <el-card shadow="never" class="drawing-detail-card drawing-detail-card--fill">
+            <template #header>
+              <div class="drawing-detail-card__header">
+                <span>图纸下工作量</span>
+                <span class="drawing-detail-card__tip">工作量必须依附当前图纸存在</span>
+              </div>
             </template>
-          </el-table-column>
-          <el-table-column prop="remark" label="备注" min-width="160" show-overflow-tooltip />
-          <el-table-column label="操作" width="160" align="center">
-            <template #default="{ row }">
-              <el-button size="small" type="primary" plain @click="handleEditWorkItem(row)" v-hasPermi="['docman:project:edit']">编辑</el-button>
-              <el-button size="small" type="danger" plain @click="handleDeleteWorkItem(row.id)" v-hasPermi="['docman:project:remove']"
-                >删除</el-button
-              >
-            </template>
-          </el-table-column>
-        </el-table>
+            <el-table v-loading="workItemLoading" :data="workItems" border stripe height="100%" data-testid="drawing-workitem-table">
+              <el-table-column prop="workItemName" label="工作量名称" min-width="180" />
+              <el-table-column prop="workItemCode" label="编码" min-width="120" />
+              <el-table-column prop="category" label="分类" min-width="120" />
+              <el-table-column prop="unit" label="单位" width="90" />
+              <el-table-column prop="quantity" label="数量" width="110" />
+              <el-table-column label="计入估算" width="100" align="center">
+                <template #default="{ row }">
+                  <el-tag :type="row.includeInEstimate ? 'success' : 'info'" size="small">
+                    {{ row.includeInEstimate ? '是' : '否' }}
+                  </el-tag>
+                </template>
+              </el-table-column>
+              <el-table-column prop="remark" label="备注" min-width="180" show-overflow-tooltip />
+              <el-table-column label="操作" width="160" align="center">
+                <template #default="{ row }">
+                  <el-button size="small" type="primary" plain @click="handleEditWorkItem(row)" v-hasPermi="['docman:project:edit']">编辑</el-button>
+                  <el-button size="small" type="danger" plain @click="handleDeleteWorkItem(row.id)" v-hasPermi="['docman:project:remove']"
+                    >删除</el-button
+                  >
+                </template>
+              </el-table-column>
+            </el-table>
+          </el-card>
+        </div>
       </el-dialog>
 
       <el-dialog
@@ -177,6 +220,7 @@ const workItemFormRef = ref();
 const workItems = ref<DocProjectDrawingWorkItem[]>([]);
 const workItemLoading = ref(false);
 const workItemLoadError = ref('');
+const selectedDrawing = ref<DocProjectDrawing>();
 
 const dialog = reactive<DialogOption>({
   visible: false,
@@ -223,6 +267,12 @@ const initWorkItemForm: DocProjectDrawingWorkItemForm = {
   remark: ''
 };
 const workItemForm = reactive<DocProjectDrawingWorkItemForm>({ ...initWorkItemForm });
+const drawingDetailTitle = computed(() => {
+  if (!selectedDrawing.value) {
+    return '图纸详情';
+  }
+  return `图纸详情 / ${selectedDrawing.value.drawingCode || selectedDrawing.value.orderSerialNo || '未命名图纸'}`;
+});
 
 async function getList() {
   if (!hasProjectId.value) {
@@ -236,6 +286,7 @@ async function getList() {
     const res = await listProjectDrawings(projectId.value!);
     rows.value = res.data || [];
     total.value = rows.value.length;
+    syncSelectedDrawing();
   } catch (error) {
     rows.value = [];
     total.value = 0;
@@ -289,6 +340,14 @@ function resetWorkItemForm() {
   workItemFormRef.value?.resetFields?.();
 }
 
+function resetDrawingDetail() {
+  selectedDrawing.value = undefined;
+  workItemDialog.drawingId = undefined;
+  workItemDialog.drawingCode = '';
+  workItems.value = [];
+  workItemLoadError.value = '';
+}
+
 async function submitForm() {
   if (!hasProjectId.value) {
     return;
@@ -323,10 +382,18 @@ async function loadWorkItems(drawingId?: string) {
 
 async function handleManageWorkItems(row: DocProjectDrawing) {
   workItemDialog.visible = true;
-  workItemDialog.title = '维护图纸工作量';
+  workItemDialog.title = '图纸详情';
   workItemDialog.drawingId = String(row.id || '');
   workItemDialog.drawingCode = row.drawingCode || row.orderSerialNo || '';
+  selectedDrawing.value = { ...row };
   await loadWorkItems(workItemDialog.drawingId);
+}
+
+function handleEditSelectedDrawing() {
+  if (!selectedDrawing.value) {
+    return;
+  }
+  handleUpdate(selectedDrawing.value);
 }
 
 function handleAddWorkItem() {
@@ -393,7 +460,11 @@ function handleDeleteWorkItem(id?: number | string) {
     .catch(() => undefined);
 }
 
-function handleDelete(id?: number) {
+function handleDeleteSelectedDrawing() {
+  handleDelete(selectedDrawing.value?.id, true);
+}
+
+function handleDelete(id?: number | string, closeDetail = false) {
   if (id == undefined) {
     return;
   }
@@ -402,6 +473,9 @@ function handleDelete(id?: number) {
       try {
         await deleteProjectDrawing([id]);
         ElMessage.success('删除成功');
+        if (closeDetail) {
+          workItemDialog.visible = false;
+        }
         await getList();
       } catch (error) {
         handleApiError(error, '图纸删除失败');
@@ -410,8 +484,91 @@ function handleDelete(id?: number) {
     .catch(() => undefined);
 }
 
+function syncSelectedDrawing() {
+  if (!selectedDrawing.value) {
+    return;
+  }
+  const latest = rows.value.find((row) => String(row.id) === String(selectedDrawing.value?.id));
+  if (!latest) {
+    resetDrawingDetail();
+    return;
+  }
+  selectedDrawing.value = { ...latest };
+  workItemDialog.drawingId = latest.id == undefined ? undefined : String(latest.id);
+  workItemDialog.drawingCode = latest.drawingCode || latest.orderSerialNo || '';
+}
+
 onMounted(() => {
   reset();
   getList();
 });
 </script>
+
+<style scoped>
+.drawing-detail-shell {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-height: calc(100vh - 132px);
+}
+
+.drawing-detail-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+.drawing-detail-header__meta {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.drawing-detail-header__title {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.drawing-detail-header__subtitle {
+  margin: 0;
+  color: #64748b;
+  font-size: 13px;
+}
+
+.drawing-detail-card {
+  border: 1px solid #e2e8f0;
+}
+
+.drawing-detail-card--fill {
+  flex: 1;
+}
+
+.drawing-detail-card__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+.drawing-detail-card__tip {
+  color: #64748b;
+  font-size: 13px;
+}
+
+:deep(.drawing-detail-card--fill .el-card__body) {
+  height: calc(100% - 57px);
+  display: flex;
+  flex-direction: column;
+}
+
+@media (max-width: 960px) {
+  .drawing-detail-header,
+  .drawing-detail-card__header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
+</style>

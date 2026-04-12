@@ -120,12 +120,6 @@ export const dynamicRoutes: RouteRecordRaw[] = [
         meta: { title: '项目经理平料', noCache: true, activeMenu: '/docman/project', permissions: ['docman:project:query'] }
       },
       {
-        path: 'workload/:projectId',
-        component: () => import('@/views/docman/workload/index.vue'),
-        name: 'DocWorkload',
-        meta: { title: '工作量录入', noCache: true, activeMenu: '/docman/project', permissions: ['docman:project:query'] }
-      },
-      {
         path: 'project-type',
         component: () => import('@/views/docman/projectType/index.vue'),
         name: 'DocProjectType',
