@@ -12,6 +12,11 @@ export interface DocProject {
   customerType: string;
   businessType: string;
   documentCategory: string;
+  telecomCode?: string;
+  xiangyunCode?: string;
+  telecomProjectDate?: string;
+  planStartDate?: string;
+  planEndDate?: string;
   status: string;
   ownerId: DocmanId;
   ownerName?: string;
@@ -100,6 +105,34 @@ export interface DocProjectDrawingForm {
   orderSerialNo?: string;
   workContent?: string;
   includeInProject?: boolean;
+  remark?: string;
+}
+
+export interface DocProjectDrawingWorkItem {
+  id?: DocmanId;
+  projectId: DocmanId;
+  drawingId: DocmanId;
+  workItemCode?: string;
+  workItemName?: string;
+  category?: string;
+  unit?: string;
+  quantity?: number;
+  includeInEstimate?: boolean;
+  remark?: string;
+  createTime?: string;
+  updateTime?: string;
+}
+
+export interface DocProjectDrawingWorkItemForm {
+  id?: DocmanId;
+  projectId: DocmanId;
+  drawingId: DocmanId;
+  workItemCode?: string;
+  workItemName?: string;
+  category?: string;
+  unit?: string;
+  quantity?: number;
+  includeInEstimate?: boolean;
   remark?: string;
 }
 

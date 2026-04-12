@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { DocProjectAddRecord, DocProjectNodeTaskRuntime } from '@/api/docman/types';
+import type { DocProjectDrawingWorkItem, DocProjectNodeTaskRuntime } from '@/api/docman/types';
 import { hasEstimateTask, hasExportTask, isRedirectTask, resolvePluginTaskLabel, summarizeWorkload } from './workspace.util';
 
 describe('workspace util', () => {
@@ -57,7 +57,7 @@ describe('workspace util', () => {
     );
     expect(resolvePluginTaskLabel({ taskType: 'form_fill', taskCode: 'drawing_fill', completionRule: 'drawing_exists' })).toBe('去录图纸');
     expect(resolvePluginTaskLabel({ taskType: 'form_fill', taskCode: 'visa_fill', completionRule: 'visa_exists' })).toBe('去录签证');
-    expect(resolvePluginTaskLabel({ taskType: 'form_fill', taskCode: 'workload_fill', completionRule: 'workload_exists' })).toBe('去录入');
+    expect(resolvePluginTaskLabel({ taskType: 'form_fill', taskCode: 'workload_fill', completionRule: 'workload_exists' })).toBe('去录图纸工作量');
     expect(resolvePluginTaskLabel({ taskType: 'manager_adjust', taskCode: 'manager_adjust', completionRule: 'balance_adjustment_exists' })).toBe(
       '去平料'
     );
@@ -74,32 +74,31 @@ describe('workspace util', () => {
     expect(isRedirectTask({ taskType: 'plugin_run', taskCode: 'estimate_run' })).toBe(false);
   });
 
-  it('summarizes workload records for workspace overview', () => {
-    const records: DocProjectAddRecord[] = [
+  it('summarizes drawing workload items for workspace overview', () => {
+    const records: DocProjectDrawingWorkItem[] = [
       {
         id: 1,
         projectId: 1,
-        enable: true,
-        estimatedPrice: 120,
-        details: [
-          { projectId: 1, name: '杆路整治' },
-          { projectId: 1, alias: '光缆布放' }
-        ]
+        drawingId: 10,
+        workItemName: '杆路整治',
+        quantity: 12,
+        includeInEstimate: true
       },
       {
         id: 2,
         projectId: 1,
-        enable: false,
-        estimatedPrice: 80,
-        details: []
+        drawingId: 10,
+        workItemCode: 'GLBF',
+        quantity: 8,
+        includeInEstimate: false
       }
     ];
 
     expect(summarizeWorkload(records)).toEqual({
-      totalRecords: 2,
-      enabledRecords: 1,
-      totalEstimatedPrice: 200,
-      latestDetailSummary: '杆路整治、光缆布放'
+      totalItems: 2,
+      includedItems: 1,
+      totalQuantity: 20,
+      latestDetailSummary: '杆路整治、GLBF'
     });
   });
 });

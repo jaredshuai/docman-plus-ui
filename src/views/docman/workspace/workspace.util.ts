@@ -1,4 +1,4 @@
-import type { DocProjectAddRecord, DocProjectNodeTaskRuntime } from '@/api/docman/types';
+import type { DocProjectDrawingWorkItem, DocProjectNodeTaskRuntime } from '@/api/docman/types';
 
 const ESTIMATE_TASK_CODE = 'estimate_run';
 const EXPORT_TASK_CODE = 'export_run';
@@ -34,7 +34,7 @@ export function resolvePluginTaskLabel(task: Pick<DocProjectNodeTaskRuntime, 'ta
       return '去录签证';
     }
     if (task.taskCode === WORKLOAD_TASK_CODE) {
-      return '去录入';
+      return '去录图纸工作量';
     }
     if (task.taskCode === MANAGER_ADJUST_TASK_CODE) {
       return '去平料';
@@ -58,22 +58,22 @@ export function isRedirectTask(task: Pick<DocProjectNodeTaskRuntime, 'taskCode' 
 }
 
 export interface WorkloadSummary {
-  totalRecords: number;
-  enabledRecords: number;
-  totalEstimatedPrice: number;
+  totalItems: number;
+  includedItems: number;
+  totalQuantity: number;
   latestDetailSummary: string;
 }
 
-export function summarizeWorkload(records: DocProjectAddRecord[] | undefined): WorkloadSummary {
-  const safeRecords = records ?? [];
+export function summarizeWorkload(items: DocProjectDrawingWorkItem[] | undefined): WorkloadSummary {
+  const safeItems = items ?? [];
   return {
-    totalRecords: safeRecords.length,
-    enabledRecords: safeRecords.filter((item) => item.enable !== false).length,
-    totalEstimatedPrice: safeRecords.reduce((sum, item) => sum + Number(item.estimatedPrice ?? 0), 0),
-    latestDetailSummary:
-      safeRecords[0]?.details
-        ?.map((detail) => detail.name || detail.alias)
-        .filter(Boolean)
-        .join('、') || ''
+    totalItems: safeItems.length,
+    includedItems: safeItems.filter((item) => item.includeInEstimate !== false).length,
+    totalQuantity: safeItems.reduce((sum, item) => sum + Number(item.quantity ?? 0), 0),
+    latestDetailSummary: safeItems
+      .map((item) => item.workItemName || item.workItemCode)
+      .filter(Boolean)
+      .slice(0, 3)
+      .join('、')
   };
 }

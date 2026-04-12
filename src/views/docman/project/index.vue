@@ -80,10 +80,8 @@
             <el-button size="small" type="info" plain> 更多<i class="el-icon-arrow-down el-icon--right"></i> </el-button>
             <template #dropdown>
               <el-dropdown-menu>
-                <el-dropdown-item command="workspace" v-hasPermi="['docman:project:query']">项目工作台</el-dropdown-item>
                 <el-dropdown-item command="balance" v-hasPermi="['docman:project:query']">项目经理平料</el-dropdown-item>
-                <el-dropdown-item command="workload" v-hasPermi="['docman:project:query']">工作量录入</el-dropdown-item>
-                <el-dropdown-item command="drawing" v-hasPermi="['docman:project:query']">图纸录入</el-dropdown-item>
+                <el-dropdown-item command="drawing" v-hasPermi="['docman:project:query']">图纸/工作量录入</el-dropdown-item>
                 <el-dropdown-item command="visa">签证单</el-dropdown-item>
                 <el-dropdown-item command="archive" v-if="row.status === 'active'" v-hasPermi="['docman:archive:execute']">归档</el-dropdown-item>
                 <el-dropdown-item command="process" v-hasPermi="['docman:process:query']">流程</el-dropdown-item>
@@ -185,8 +183,7 @@
         </el-row>
       </el-form>
       <div v-if="form.id" class="quick-action-bar" style="margin: 16px 0; display: flex; gap: 12px; padding-top: 16px; border-top: 1px solid #ebeef5">
-        <el-button type="primary" plain icon="Plus" @click="handleAddWorkload">工作量录入</el-button>
-        <el-button type="success" plain icon="Plus" @click="handleAddDrawing">图纸录入</el-button>
+        <el-button type="primary" plain icon="Plus" @click="handleAddDrawing">图纸/工作量录入</el-button>
         <el-button type="warning" plain icon="Plus" @click="handleAddVisa">新增签证单</el-button>
         <el-button type="info" plain icon="EditPen" @click="handleWorkspace(form.id!)">项目工作台</el-button>
       </div>
@@ -218,6 +215,7 @@ import { listProject, addProject, updateProject, delProject, getProject } from '
 import { archiveProject } from '@/api/docman/archive';
 import { listProjectType } from '@/api/docman/projectType';
 import { DocProject, DocProjectQuery, DocProjectForm, DocmanId } from '@/api/docman/types';
+import { getProjectWorkspace } from '@/api/docman/workspace';
 import { useUserStore } from '@/store/modules/user';
 import { handleApiError } from '@/utils/error';
 import { resolveDictLabel } from '../docmanDict.util';
@@ -354,31 +352,12 @@ function handleUpdate(row: DocProject) {
 }
 
 /** 详情按钮操作 */
-function handleDetail(row: DocProject) {
-  reset();
-  dialogMode.value = 'detail';
-  dialog.visible = true;
-  dialog.title = '项目详情';
-  Object.assign(form.value, {
-    id: row.id,
-    name: row.name,
-    projectTypeCode: row.projectTypeCode,
-    customerType: row.customerType,
-    businessType: row.businessType,
-    documentCategory: row.documentCategory,
-    telecomCode: (row as any).telecomCode || '',
-    xiangyunCode: (row as any).xiangyunCode || '',
-    telecomProjectDate: (row as any).telecomProjectDate || '',
-    planStartDate: (row as any).planStartDate || '',
-    planEndDate: (row as any).planEndDate || '',
-    remark: row.remark
-  });
-}
-
-/** 新增工作量按钮 */
-function handleAddWorkload() {
-  if (form.value.id) {
-    handleWorkload(form.value.id);
+async function handleDetail(row: DocProject) {
+  try {
+    await getProjectWorkspace(row.id);
+    handleWorkspace(row.id);
+  } catch (error) {
+    handleApiError(error, '项目详情暂不可查看');
   }
 }
 
@@ -446,9 +425,6 @@ function handleDelete(id: DocmanId) {
 function handleDocuments(id: DocmanId) {
   router.push({ path: '/docman/document', query: { projectId: String(id) } });
 }
-function handleWorkload(id: DocmanId) {
-  router.push(`/docman/workload/${id}`);
-}
 function handleDrawing(id: DocmanId) {
   router.push(`/docman/drawing/${id}`);
 }
@@ -472,14 +448,8 @@ function handleArchiveDetail(id: DocmanId) {
 
 function handleCommand(command: string, row: DocProject) {
   switch (command) {
-    case 'workspace':
-      handleWorkspace(row.id);
-      break;
     case 'balance':
       handleBalance(row.id);
-      break;
-    case 'workload':
-      handleWorkload(row.id);
       break;
     case 'drawing':
       handleDrawing(row.id);

@@ -22,7 +22,7 @@ test.describe('P1 电信闭环运行时', () => {
       await completeProjectTask(page, project.id, confirmTask.id);
       await advanceProjectNode(page, project.id, workspace.currentNodeCode);
 
-      await requestDocmanJson(page, '/docman/project/drawing', {
+      const drawingId = await requestDocmanJson<string | number>(page, '/docman/project/drawing', {
         method: 'POST',
         data: {
           projectId: project.id,
@@ -57,20 +57,21 @@ test.describe('P1 电信闭环运行时', () => {
       expect(workloadTask?.status).toBe('pending');
 
       await gotoWorkspace(project.id);
-      await page.getByRole('button', { name: '去录入' }).first().click();
-      await page.waitForURL(new RegExp(`/docman/workload/${project.id}$`), { timeout: 10000 });
+      await page.getByRole('button', { name: '去录图纸工作量' }).first().click();
+      await page.waitForURL(new RegExp(`/docman/drawing/${project.id}$`), { timeout: 10000 });
 
-      await requestDocmanJson(page, '/docman/project/add-record', {
+      await requestDocmanJson(page, '/docman/project/drawing/work-item', {
         method: 'POST',
         data: {
           projectId: project.id,
-          enable: true,
-          estimatedPrice: 456.78,
-          remark: 'runtime-check',
-          details: [
-            { projectId: project.id, name: '杆路整治', alias: '杆路', price: 200, remark: 'a' },
-            { projectId: project.id, name: '光缆布放', alias: '布放', price: 256.78, remark: 'b' }
-          ]
+          drawingId,
+          workItemCode: `WI-${Date.now()}`,
+          workItemName: '杆路整治',
+          category: '施工',
+          unit: '处',
+          quantity: 2,
+          includeInEstimate: true,
+          remark: 'runtime-check'
         }
       });
 

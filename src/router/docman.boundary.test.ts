@@ -33,9 +33,10 @@ describe('docman route boundaries', () => {
     expect(projectSource).toMatch(/command="visa"/);
   });
 
-  it('keeps workload line reachable from docman project routes', () => {
+  it('keeps workload compatibility route but removes standalone workload entry from project routes', () => {
     expect(getRouteBlock('workload/:projectId')).toMatch(/DocWorkload/);
-    expect(projectSource).toMatch(/command="workload"/);
-    expect(projectSource).toMatch(/handleAddWorkload/);
+    expect(projectSource).not.toMatch(/command="workload"/);
+    expect(projectSource).not.toMatch(/handleAddWorkload/);
+    expect(projectSource).toMatch(/图纸\/工作量录入/);
   });
 });
