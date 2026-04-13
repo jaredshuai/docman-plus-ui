@@ -23,7 +23,7 @@
           <template #header>
             <div class="panel-card__header">
               <span>快捷入口</span>
-              <el-button link type="primary" @click="goToMyProjects">查看全部项目</el-button>
+              <el-button link type="primary" @click="goToMyProjects">进入项目管理</el-button>
             </div>
           </template>
           <div class="quick-actions">
@@ -41,7 +41,7 @@
             </button>
             <button class="quick-action" type="button" @click="goToMyProjects">
               <span class="quick-action__title">我的项目</span>
-              <span class="quick-action__desc">按项目进入文档和流程</span>
+              <span class="quick-action__desc">从项目管理进入项目工作台</span>
             </button>
           </div>
         </el-card>
@@ -72,9 +72,8 @@
                 <span>负责人：{{ item.ownerName || '-' }}</span>
               </div>
               <div class="project-card__actions">
-                <el-button link type="primary" @click="openProjectDocuments(item.id)">文档中心</el-button>
-                <el-button link type="warning" @click="openProjectProcess(item.id)">流程</el-button>
-                <el-button link type="info" @click="openProjectArchive(item.id)">归档详情</el-button>
+                <el-button link type="primary" @click="openProjectWorkspace(item.id)">项目工作台</el-button>
+                <el-button link type="info" @click="goToMyProjects">项目管理</el-button>
               </div>
             </div>
           </div>
@@ -179,19 +178,11 @@ const loadWorkspace = async () => {
 };
 
 const goToMyProjects = () => {
-  router.push('/workspace/project');
+  router.push('/docman/project');
 };
 
-const openProjectDocuments = (projectId: DocmanId) => {
-  router.push({ path: '/workspace/document', query: { projectId: String(projectId) } });
-};
-
-const openProjectProcess = (projectId: DocmanId) => {
-  router.push({ path: '/workspace/process', query: { projectId: String(projectId) } });
-};
-
-const openProjectArchive = (projectId: DocmanId) => {
-  router.push({ path: '/workspace/archive', query: { projectId: String(projectId) } });
+const openProjectWorkspace = (projectId: DocmanId) => {
+  router.push({ path: '/docman/workspace', query: { projectId: String(projectId) } });
 };
 
 onMounted(() => {

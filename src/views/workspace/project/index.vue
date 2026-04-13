@@ -22,7 +22,7 @@
     </el-form>
 
     <el-card shadow="never" class="workspace-tip">
-      <span>这里只展示你参与的项目，进入后可继续查看文档、流程和归档信息。</span>
+      <span>这里只展示你参与的项目，进入后统一从项目工作台查看过程状态。</span>
     </el-card>
 
     <div v-loading="loading">
@@ -50,9 +50,8 @@
 
             <template #footer>
               <div class="project-card__actions">
-                <el-button link type="primary" @click="openDocuments(item.id)">文档中心</el-button>
-                <el-button link type="warning" @click="openProcess(item.id)">流程</el-button>
-                <el-button link type="info" @click="openArchive(item.id)">归档详情</el-button>
+                <el-button link type="primary" @click="openWorkspace(item.id)">项目工作台</el-button>
+                <el-button link type="info" @click="openProjectList">项目管理</el-button>
               </div>
             </template>
           </el-card>
@@ -115,16 +114,12 @@ const resetQuery = () => {
   loadProjects();
 };
 
-const openDocuments = (projectId: DocmanId) => {
-  router.push({ path: '/workspace/document', query: { projectId: String(projectId) } });
+const openWorkspace = (projectId: DocmanId) => {
+  router.push({ path: '/docman/workspace', query: { projectId: String(projectId) } });
 };
 
-const openProcess = (projectId: DocmanId) => {
-  router.push({ path: '/workspace/process', query: { projectId: String(projectId) } });
-};
-
-const openArchive = (projectId: DocmanId) => {
-  router.push({ path: '/workspace/archive', query: { projectId: String(projectId) } });
+const openProjectList = () => {
+  router.push('/docman/project');
 };
 
 onMounted(() => {
