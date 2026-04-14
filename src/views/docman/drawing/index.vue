@@ -99,7 +99,6 @@
             </div>
             <el-space wrap>
               <el-button @click="workItemDialog.visible = false">返回图纸列表</el-button>
-              <el-button type="primary" plain @click="handleAddWorkItem" v-hasPermi="['docman:project:edit']">新增工作量项</el-button>
               <el-button plain @click="handleEditSelectedDrawing" v-hasPermi="['docman:project:edit']">修改图纸</el-button>
               <el-button type="danger" plain @click="handleDeleteSelectedDrawing" v-hasPermi="['docman:project:remove']">移除图纸</el-button>
             </el-space>
@@ -123,73 +122,132 @@
           <el-card shadow="never" class="drawing-detail-card drawing-detail-card--fill">
             <template #header>
               <div class="drawing-detail-card__header">
-                <span>图纸下工作量</span>
-                <span class="drawing-detail-card__tip">工作量必须依附当前图纸存在</span>
+                <div class="drawing-detail-card__title-group">
+                  <span>图纸下工作量</span>
+                  <span class="drawing-detail-card__tip">工作量必须依附当前图纸存在</span>
+                </div>
+                <el-link
+                  type="primary"
+                  :underline="false"
+                  class="drawing-detail-card__action"
+                  data-testid="drawing-workitem-add-row"
+                  :disabled="workItemLoading"
+                  @click="handleAppendWorkItemRow"
+                  v-hasPermi="['docman:project:edit']"
+                >
+                  + 新增一行
+                </el-link>
               </div>
             </template>
-            <el-table v-loading="workItemLoading" :data="workItems" border stripe height="100%" data-testid="drawing-workitem-table">
-              <el-table-column prop="workItemName" label="工作量名称" min-width="180" />
-              <el-table-column prop="workItemCode" label="编码" min-width="120" />
-              <el-table-column prop="category" label="分类" min-width="120" />
-              <el-table-column prop="unit" label="单位" width="90" />
-              <el-table-column prop="quantity" label="数量" width="110" />
-              <el-table-column label="计入估算" width="100" align="center">
+            <el-table
+              v-loading="workItemLoading"
+              :data="workItems"
+              :row-key="(row) => row.localKey"
+              border
+              stripe
+              height="100%"
+              data-testid="drawing-workitem-table"
+            >
+              <el-table-column label="工作量名称" min-width="220">
                 <template #default="{ row }">
-                  <el-tag :type="row.includeInEstimate ? 'success' : 'info'" size="small">
-                    {{ row.includeInEstimate ? '是' : '否' }}
-                  </el-tag>
+                  <el-input
+                    v-model="row.workItemName"
+                    placeholder="请输入工作量名称"
+                    style="width: 100%"
+                    :disabled="row.saving || row.deleting"
+                    data-testid="drawing-workitem-inline-name"
+                  />
                 </template>
               </el-table-column>
-              <el-table-column prop="remark" label="备注" min-width="180" show-overflow-tooltip />
-              <el-table-column label="操作" width="160" align="center">
+              <el-table-column label="编码" min-width="140">
                 <template #default="{ row }">
-                  <el-button size="small" type="primary" plain @click="handleEditWorkItem(row)" v-hasPermi="['docman:project:edit']">编辑</el-button>
-                  <el-button size="small" type="danger" plain @click="handleDeleteWorkItem(row.id)" v-hasPermi="['docman:project:remove']"
-                    >删除</el-button
-                  >
+                  <el-input
+                    v-model="row.workItemCode"
+                    placeholder="请输入编码"
+                    style="width: 100%"
+                    :disabled="row.saving || row.deleting"
+                    data-testid="drawing-workitem-inline-code"
+                  />
+                </template>
+              </el-table-column>
+              <el-table-column label="分类" min-width="140">
+                <template #default="{ row }">
+                  <el-input v-model="row.category" placeholder="请输入分类" style="width: 100%" :disabled="row.saving || row.deleting" />
+                </template>
+              </el-table-column>
+              <el-table-column label="单位" width="110">
+                <template #default="{ row }">
+                  <el-input v-model="row.unit" placeholder="单位" style="width: 100%" :disabled="row.saving || row.deleting" />
+                </template>
+              </el-table-column>
+              <el-table-column label="数量" width="150">
+                <template #default="{ row }">
+                  <el-input-number
+                    v-model="row.quantity"
+                    :min="0"
+                    :precision="2"
+                    controls-position="right"
+                    style="width: 100%"
+                    :disabled="row.saving || row.deleting"
+                    data-testid="drawing-workitem-inline-quantity"
+                  />
+                </template>
+              </el-table-column>
+              <el-table-column label="计入估算" width="100" align="center">
+                <template #default="{ row }">
+                  <el-switch
+                    v-model="row.includeInEstimate"
+                    :disabled="row.saving || row.deleting"
+                    data-testid="drawing-workitem-inline-estimate"
+                  />
+                </template>
+              </el-table-column>
+              <el-table-column label="备注" min-width="220">
+                <template #default="{ row }">
+                  <el-input v-model="row.remark" placeholder="请输入备注" style="width: 100%" :disabled="row.saving || row.deleting" />
+                </template>
+              </el-table-column>
+              <el-table-column label="操作" width="170" align="center">
+                <template #default="{ row }">
+                  <el-space :size="12">
+                    <el-link
+                      type="primary"
+                      :underline="false"
+                      :disabled="row.saving || row.deleting"
+                      data-testid="drawing-workitem-save-row"
+                      @click="handleSaveWorkItem(row)"
+                      v-hasPermi="['docman:project:edit']"
+                    >
+                      {{ row.saving ? '保存中...' : '保存' }}
+                    </el-link>
+                    <el-link
+                      v-if="row.id == undefined"
+                      type="danger"
+                      :underline="false"
+                      :disabled="row.saving || row.deleting"
+                      data-testid="drawing-workitem-delete-row"
+                      @click="handleDeleteWorkItem(row)"
+                      v-hasPermi="['docman:project:edit']"
+                    >
+                      移除
+                    </el-link>
+                    <el-link
+                      v-else
+                      type="danger"
+                      :underline="false"
+                      :disabled="row.saving || row.deleting"
+                      data-testid="drawing-workitem-delete-row"
+                      @click="handleDeleteWorkItem(row)"
+                      v-hasPermi="['docman:project:remove']"
+                    >
+                      {{ row.deleting ? '删除中...' : '删除' }}
+                    </el-link>
+                  </el-space>
                 </template>
               </el-table-column>
             </el-table>
           </el-card>
         </div>
-      </el-dialog>
-
-      <el-dialog
-        v-model="workItemEditor.visible"
-        :title="workItemEditor.title"
-        width="520px"
-        append-to-body
-        data-testid="drawing-workitem-editor-dialog"
-      >
-        <el-form ref="workItemFormRef" :model="workItemForm" label-width="100px" data-testid="drawing-workitem-form">
-          <el-form-item label="工作量名称">
-            <el-input v-model="workItemForm.workItemName" placeholder="请输入工作量名称" data-testid="drawing-workitem-name" />
-          </el-form-item>
-          <el-form-item label="工作量编码">
-            <el-input v-model="workItemForm.workItemCode" placeholder="请输入工作量编码" data-testid="drawing-workitem-code" />
-          </el-form-item>
-          <el-form-item label="分类">
-            <el-input v-model="workItemForm.category" placeholder="请输入分类" />
-          </el-form-item>
-          <el-form-item label="单位">
-            <el-input v-model="workItemForm.unit" placeholder="请输入单位" />
-          </el-form-item>
-          <el-form-item label="数量">
-            <el-input-number v-model="workItemForm.quantity" :min="0" :precision="2" style="width: 100%" data-testid="drawing-workitem-quantity" />
-          </el-form-item>
-          <el-form-item label="计入估算">
-            <el-switch v-model="workItemForm.includeInEstimate" />
-          </el-form-item>
-          <el-form-item label="备注">
-            <el-input v-model="workItemForm.remark" type="textarea" :rows="3" placeholder="请输入备注" />
-          </el-form-item>
-        </el-form>
-        <template #footer>
-          <div class="dialog-footer">
-            <el-button type="primary" @click="submitWorkItemForm">确 定</el-button>
-            <el-button @click="cancelWorkItemEdit">取 消</el-button>
-          </div>
-        </template>
       </el-dialog>
     </template>
   </div>
@@ -201,9 +259,15 @@ import { useRoute, useRouter } from 'vue-router';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { deleteProjectDrawing, listProjectDrawings, saveProjectDrawing } from '@/api/docman/drawing';
 import { deleteDrawingWorkItems, listDrawingWorkItems, saveDrawingWorkItem } from '@/api/docman/drawingWorkItem';
-import type { DocProjectDrawing, DocProjectDrawingForm, DocProjectDrawingWorkItem, DocProjectDrawingWorkItemForm } from '@/api/docman/types';
+import type { DocProjectDrawing, DocProjectDrawingForm, DocProjectDrawingWorkItem, DocProjectDrawingWorkItemForm, DocmanId } from '@/api/docman/types';
 import { handleApiError } from '@/utils/error';
 import { paginateRows, resolvePathProjectId } from '../inputLine/inputLine.util';
+
+interface EditableDrawingWorkItem extends DocProjectDrawingWorkItemForm {
+  localKey: string;
+  saving: boolean;
+  deleting: boolean;
+}
 
 const route = useRoute();
 const router = useRouter();
@@ -216,8 +280,7 @@ const loadError = ref('');
 const rows = ref<DocProjectDrawing[]>([]);
 const total = ref(0);
 const drawingFormRef = ref();
-const workItemFormRef = ref();
-const workItems = ref<DocProjectDrawingWorkItem[]>([]);
+const workItems = ref<EditableDrawingWorkItem[]>([]);
 const workItemLoading = ref(false);
 const workItemLoadError = ref('');
 const selectedDrawing = ref<DocProjectDrawing>();
@@ -231,10 +294,6 @@ const workItemDialog = reactive<DialogOption & { drawingId?: string; drawingCode
   title: '',
   drawingId: undefined,
   drawingCode: ''
-});
-const workItemEditor = reactive<DialogOption>({
-  visible: false,
-  title: ''
 });
 
 const queryParams = reactive({
@@ -254,25 +313,58 @@ const initFormData: DocProjectDrawingForm = {
 
 const form = reactive<DocProjectDrawingForm>({ ...initFormData });
 const pagedRows = computed(() => paginateRows(rows.value, queryParams.pageNum, queryParams.pageSize));
-const initWorkItemForm: DocProjectDrawingWorkItemForm = {
-  id: undefined,
-  projectId: '',
-  drawingId: '',
-  workItemCode: '',
-  workItemName: '',
-  category: '',
-  unit: '',
-  quantity: undefined,
-  includeInEstimate: true,
-  remark: ''
-};
-const workItemForm = reactive<DocProjectDrawingWorkItemForm>({ ...initWorkItemForm });
 const drawingDetailTitle = computed(() => {
   if (!selectedDrawing.value) {
     return '图纸详情';
   }
   return `图纸详情 / ${selectedDrawing.value.drawingCode || selectedDrawing.value.orderSerialNo || '未命名图纸'}`;
 });
+let workItemSeed = 0;
+
+function createWorkItemLocalKey(id?: DocmanId) {
+  if (id != undefined) {
+    return `drawing-work-item-${id}`;
+  }
+  workItemSeed += 1;
+  return `drawing-work-item-new-${workItemSeed}`;
+}
+
+function buildEditableWorkItem(item: Partial<DocProjectDrawingWorkItem> = {}): EditableDrawingWorkItem {
+  return {
+    localKey: createWorkItemLocalKey(item.id),
+    id: item.id,
+    projectId: item.projectId ?? projectId.value ?? '',
+    drawingId: item.drawingId ?? workItemDialog.drawingId ?? '',
+    workItemCode: item.workItemCode ?? '',
+    workItemName: item.workItemName ?? '',
+    category: item.category ?? '',
+    unit: item.unit ?? '',
+    quantity: item.quantity,
+    includeInEstimate: item.includeInEstimate ?? true,
+    remark: item.remark ?? '',
+    saving: false,
+    deleting: false
+  };
+}
+
+function normalizeText(value?: string) {
+  return value?.trim() || '';
+}
+
+function buildWorkItemPayload(row: EditableDrawingWorkItem): DocProjectDrawingWorkItemForm {
+  return {
+    id: row.id,
+    projectId: projectId.value || '',
+    drawingId: workItemDialog.drawingId || '',
+    workItemCode: normalizeText(row.workItemCode),
+    workItemName: normalizeText(row.workItemName),
+    category: normalizeText(row.category),
+    unit: normalizeText(row.unit),
+    quantity: row.quantity,
+    includeInEstimate: row.includeInEstimate ?? true,
+    remark: normalizeText(row.remark)
+  };
+}
 
 async function getList() {
   if (!hasProjectId.value) {
@@ -331,15 +423,6 @@ function cancel() {
   reset();
 }
 
-function resetWorkItemForm() {
-  Object.assign(workItemForm, {
-    ...initWorkItemForm,
-    projectId: projectId.value || '',
-    drawingId: workItemDialog.drawingId || ''
-  });
-  workItemFormRef.value?.resetFields?.();
-}
-
 function resetDrawingDetail() {
   selectedDrawing.value = undefined;
   workItemDialog.drawingId = undefined;
@@ -371,7 +454,7 @@ async function loadWorkItems(drawingId?: string) {
   workItemLoadError.value = '';
   try {
     const res = await listDrawingWorkItems(projectId.value!, drawingId);
-    workItems.value = res.data || [];
+    workItems.value = (res.data || []).map((item) => buildEditableWorkItem(item));
   } catch (error) {
     workItems.value = [];
     workItemLoadError.value = handleApiError(error, '图纸工作量加载失败');
@@ -396,65 +479,57 @@ function handleEditSelectedDrawing() {
   handleUpdate(selectedDrawing.value);
 }
 
-function handleAddWorkItem() {
-  resetWorkItemForm();
-  workItemEditor.visible = true;
-  workItemEditor.title = '新增工作量项';
-}
-
-function handleEditWorkItem(row: DocProjectDrawingWorkItem) {
-  resetWorkItemForm();
-  Object.assign(workItemForm, {
-    id: row.id,
-    projectId: projectId.value || '',
-    drawingId: workItemDialog.drawingId || '',
-    workItemCode: row.workItemCode || '',
-    workItemName: row.workItemName || '',
-    category: row.category || '',
-    unit: row.unit || '',
-    quantity: row.quantity,
-    includeInEstimate: row.includeInEstimate ?? true,
-    remark: row.remark || ''
-  });
-  workItemEditor.visible = true;
-  workItemEditor.title = '编辑工作量项';
-}
-
-function cancelWorkItemEdit() {
-  workItemEditor.visible = false;
-  resetWorkItemForm();
-}
-
-async function submitWorkItemForm() {
+function handleAppendWorkItemRow() {
   if (!hasProjectId.value || !workItemDialog.drawingId) {
     return;
   }
+  workItems.value = [...workItems.value, buildEditableWorkItem()];
+}
+
+async function handleSaveWorkItem(row: EditableDrawingWorkItem) {
+  if (!hasProjectId.value || !workItemDialog.drawingId || row.saving) {
+    return;
+  }
+  row.saving = true;
   try {
-    await saveDrawingWorkItem({
-      ...workItemForm,
-      projectId: projectId.value!,
-      drawingId: workItemDialog.drawingId
-    });
-    ElMessage.success(workItemForm.id ? '修改成功' : '新增成功');
-    workItemEditor.visible = false;
-    await loadWorkItems(workItemDialog.drawingId);
+    const payload = buildWorkItemPayload(row);
+    Object.assign(row, payload);
+    const res = await saveDrawingWorkItem(payload);
+    if (row.id == undefined && res.data != undefined) {
+      row.id = res.data;
+      row.localKey = createWorkItemLocalKey(res.data);
+    }
+    ElMessage.success(payload.id ? '修改成功' : '新增成功');
   } catch (error) {
     handleApiError(error, '工作量保存失败');
+  } finally {
+    row.saving = false;
   }
 }
 
-function handleDeleteWorkItem(id?: number | string) {
-  if (id == undefined || !workItemDialog.drawingId) {
+function removeLocalWorkItem(localKey: string) {
+  workItems.value = workItems.value.filter((item) => item.localKey !== localKey);
+}
+
+function handleDeleteWorkItem(row: EditableDrawingWorkItem) {
+  if (row.id == undefined) {
+    removeLocalWorkItem(row.localKey);
+    return;
+  }
+  if (!workItemDialog.drawingId || row.deleting) {
     return;
   }
   ElMessageBox.confirm('是否确认删除该工作量项？', '提示', { type: 'warning' })
     .then(async () => {
+      row.deleting = true;
       try {
-        await deleteDrawingWorkItems([id]);
+        await deleteDrawingWorkItems([row.id!]);
         ElMessage.success('删除成功');
-        await loadWorkItems(workItemDialog.drawingId);
+        removeLocalWorkItem(row.localKey);
       } catch (error) {
         handleApiError(error, '工作量删除失败');
+      } finally {
+        row.deleting = false;
       }
     })
     .catch(() => undefined);
@@ -553,8 +628,19 @@ onMounted(() => {
   gap: 12px;
 }
 
+.drawing-detail-card__title-group {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
 .drawing-detail-card__tip {
   color: #64748b;
+  font-size: 13px;
+}
+
+.drawing-detail-card__action {
   font-size: 13px;
 }
 

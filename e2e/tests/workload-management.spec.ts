@@ -40,43 +40,40 @@ test.describe('P1 图纸下工作量真实流程', () => {
 
       const workItemDialog = page.getByTestId('drawing-workitem-dialog');
       await expect(workItemDialog).toBeVisible({ timeout: 10000 });
-      await workItemDialog.getByRole('button', { name: '新增工作量项' }).click();
-
-      const editorDialog = page.getByTestId('drawing-workitem-editor-dialog');
-      await expect(editorDialog).toBeVisible({ timeout: 10000 });
-      await editorDialog.getByTestId('drawing-workitem-name').fill(workItemName);
-      await editorDialog.getByTestId('drawing-workitem-code').fill('GLZZ');
-      await editorDialog.getByTestId('drawing-workitem-quantity').locator('input').first().fill('2');
+      await workItemDialog.getByTestId('drawing-workitem-add-row').click();
+      await expect(workItemDialog.getByTestId('drawing-workitem-inline-name')).toHaveCount(1);
+      await workItemDialog.getByTestId('drawing-workitem-inline-name').first().fill(workItemName);
+      await workItemDialog.getByTestId('drawing-workitem-inline-code').first().fill('GLZZ');
+      await workItemDialog.getByTestId('drawing-workitem-inline-quantity').first().locator('input').fill('2');
 
       const saveWorkItemResponse = page.waitForResponse((response) => {
         return response.url().includes('/docman/project/drawing/work-item') && response.request().method() === 'POST';
       });
-      await editorDialog.getByRole('button', { name: /确\s*定/ }).click();
+      await workItemDialog.getByTestId('drawing-workitem-save-row').first().click();
       expect((await saveWorkItemResponse).ok()).toBeTruthy();
       await expect(successToast(page, '新增成功')).toBeVisible({ timeout: 10000 });
-      await expect(workItemDialog.getByTestId('drawing-workitem-table')).toContainText(workItemName, { timeout: 15000 });
+      await expect(workItemDialog.getByTestId('drawing-workitem-inline-name').first()).toHaveValue(workItemName, { timeout: 15000 });
 
-      await workItemDialog.getByRole('button', { name: '编辑' }).first().click();
-      const editDialog = page.getByTestId('drawing-workitem-editor-dialog');
-      await editDialog.getByTestId('drawing-workitem-name').fill(`${workItemName}-编辑`);
+      await workItemDialog.getByTestId('drawing-workitem-inline-name').first().fill(`${workItemName}-编辑`);
 
       const updateWorkItemResponse = page.waitForResponse((response) => {
         return response.url().includes('/docman/project/drawing/work-item') && response.request().method() === 'POST';
       });
-      await editDialog.getByRole('button', { name: /确\s*定/ }).click();
+      await workItemDialog.getByTestId('drawing-workitem-save-row').first().click();
       expect((await updateWorkItemResponse).ok()).toBeTruthy();
       await expect(successToast(page, '修改成功')).toBeVisible({ timeout: 10000 });
-      await expect(workItemDialog.getByTestId('drawing-workitem-table')).toContainText(`${workItemName}-编辑`, { timeout: 15000 });
+      await expect(workItemDialog.getByTestId('drawing-workitem-inline-name').first()).toHaveValue(`${workItemName}-编辑`, { timeout: 15000 });
 
       const deleteWorkItemResponse = page.waitForResponse((response) => {
         return response.url().includes('/docman/project/drawing/work-item/') && response.request().method() === 'DELETE';
       });
-      await workItemDialog.getByRole('button', { name: '删除' }).first().click();
+      await workItemDialog.getByTestId('drawing-workitem-delete-row').first().click();
       const confirmDialog = page.locator('.el-message-box').last();
       await expect(confirmDialog).toBeVisible({ timeout: 10000 });
       await confirmDialog.getByRole('button', { name: '确定' }).click();
       expect((await deleteWorkItemResponse).ok()).toBeTruthy();
       await expect(successToast(page, '删除成功')).toBeVisible({ timeout: 10000 });
+      await expect(workItemDialog.getByTestId('drawing-workitem-inline-name')).toHaveCount(0, { timeout: 15000 });
     } finally {
       await deleteProject(page, project.id).catch(() => undefined);
     }
