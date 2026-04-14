@@ -99,7 +99,14 @@
     <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize" @pagination="getList" />
 
     <!-- 添加或修改/详情项目配置对话框 -->
-    <el-dialog v-model="dialog.visible" :title="dialog.title" width="900px" append-to-body data-testid="project-dialog">
+    <el-dialog
+      v-model="dialog.visible"
+      :title="dialog.title"
+      width="900px"
+      append-to-body
+      data-testid="project-dialog"
+      @close="handleProjectDialogClose"
+    >
       <el-form
         ref="projectFormRef"
         :model="form"
@@ -183,7 +190,7 @@
         </el-row>
       </el-form>
       <div v-if="form.id" class="quick-action-bar" style="margin: 16px 0; display: flex; gap: 12px; padding-top: 16px; border-top: 1px solid #ebeef5">
-        <el-button type="primary" plain icon="Plus" @click="handleAddDrawing">图纸/工作量录入</el-button>
+        <el-button type="primary" plain icon="Plus" data-testid="project-add-drawing-button" @click="handleAddDrawing">图纸/工作量录入</el-button>
         <el-button type="warning" plain icon="Plus" @click="handleAddVisa">新增签证单</el-button>
         <el-button type="info" plain icon="EditPen" @click="handleWorkspace(form.id!)">项目工作台</el-button>
       </div>
@@ -205,6 +212,45 @@
         </div>
       </template>
     </el-dialog>
+
+    <el-dialog
+      v-model="drawingDialog.visible"
+      title="新增图纸"
+      width="520px"
+      append-to-body
+      data-testid="project-drawing-dialog"
+      @closed="resetDrawingForm"
+    >
+      <el-form :model="drawingForm" label-width="100px" data-testid="project-drawing-form">
+        <el-form-item label="图号">
+          <el-input v-model="drawingForm.drawingCode" placeholder="请输入图号" data-testid="project-drawing-form-code" />
+        </el-form-item>
+        <el-form-item label="订单流水号">
+          <el-input v-model="drawingForm.orderSerialNo" placeholder="请输入订单流水号" data-testid="project-drawing-form-order" />
+        </el-form-item>
+        <el-form-item label="工作内容">
+          <el-input
+            v-model="drawingForm.workContent"
+            type="textarea"
+            :rows="4"
+            placeholder="请输入工作内容"
+            data-testid="project-drawing-form-content"
+          />
+        </el-form-item>
+        <el-form-item label="计入项目">
+          <el-switch v-model="drawingForm.includeInProject" />
+        </el-form-item>
+        <el-form-item label="备注">
+          <el-input v-model="drawingForm.remark" type="textarea" :rows="3" placeholder="请输入备注内容" data-testid="project-drawing-form-remark" />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <div class="dialog-footer">
+          <el-button @click="drawingDialog.visible = false">取消</el-button>
+          <el-button type="primary" data-testid="project-drawing-submit-button" @click="submitDrawingForm">保存</el-button>
+        </div>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -212,9 +258,10 @@
 import { computed, ref, onMounted, reactive, toRefs, getCurrentInstance, ComponentInternalInstance, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { listProject, addProject, updateProject, delProject, getProject } from '@/api/docman/project';
+import { saveProjectDrawing } from '@/api/docman/drawing';
 import { archiveProject } from '@/api/docman/archive';
 import { listProjectType } from '@/api/docman/projectType';
-import { DocProject, DocProjectQuery, DocProjectForm, DocmanId } from '@/api/docman/types';
+import { DocProject, DocProjectQuery, DocProjectForm, DocProjectDrawingForm, DocmanId } from '@/api/docman/types';
 import { getProjectWorkspace } from '@/api/docman/workspace';
 import { useUserStore } from '@/store/modules/user';
 import { handleApiError } from '@/utils/error';
@@ -241,6 +288,9 @@ const dialog = reactive<DialogOption>({
   visible: false,
   title: ''
 });
+const drawingDialog = reactive({
+  visible: false
+});
 const dialogMode = ref<'edit' | 'detail'>('edit');
 
 const initFormData: DocProjectForm = {
@@ -255,6 +305,14 @@ const initFormData: DocProjectForm = {
   telecomProjectDate: '',
   planStartDate: '',
   planEndDate: '',
+  remark: ''
+};
+const initDrawingFormData: DocProjectDrawingForm = {
+  projectId: '',
+  drawingCode: '',
+  orderSerialNo: '',
+  workContent: '',
+  includeInProject: true,
   remark: ''
 };
 
@@ -276,6 +334,7 @@ const data = reactive({
 });
 
 const { queryParams, form, rules } = toRefs(data);
+const drawingForm = reactive<DocProjectDrawingForm>({ ...initDrawingFormData });
 
 function resolveSafeOwnerId(): DocmanId | undefined {
   const ownerId = String(userStore.userId ?? '').trim();
@@ -321,6 +380,13 @@ function reset() {
   projectFormRef.value?.resetFields();
 }
 
+function resetDrawingForm() {
+  Object.assign(drawingForm, {
+    ...initDrawingFormData,
+    projectId: form.value.id || ''
+  });
+}
+
 /** 新增按钮操作 */
 function handleAdd() {
   reset();
@@ -364,7 +430,8 @@ async function handleDetail(row: DocProject) {
 /** 新增图纸按钮 */
 function handleAddDrawing() {
   if (form.value.id) {
-    handleDrawing(form.value.id);
+    resetDrawingForm();
+    drawingDialog.visible = true;
   }
 }
 
@@ -378,7 +445,31 @@ function handleAddVisa() {
 /** 取消按钮 */
 function cancel() {
   dialog.visible = false;
+  drawingDialog.visible = false;
   reset();
+  resetDrawingForm();
+}
+
+function handleProjectDialogClose() {
+  drawingDialog.visible = false;
+  reset();
+  resetDrawingForm();
+}
+
+async function submitDrawingForm() {
+  if (!form.value.id) {
+    return;
+  }
+  try {
+    await saveProjectDrawing({
+      ...drawingForm,
+      projectId: form.value.id
+    });
+    proxy?.$modal.msgSuccess('图纸保存成功');
+    drawingDialog.visible = false;
+  } catch (error) {
+    handleApiError(error, '图纸保存失败，请稍后重试');
+  }
 }
 
 /** 提交按钮 */
@@ -398,6 +489,8 @@ const submitForm = () => {
           proxy?.$modal.msgSuccess('新增成功');
         }
         dialog.visible = false;
+        drawingDialog.visible = false;
+        resetDrawingForm();
         getList();
       } catch (error) {
         handleApiError(error, '操作失败，请稍后重试');
