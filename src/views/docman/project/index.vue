@@ -191,7 +191,7 @@
       </el-form>
       <div v-if="form.id" class="quick-action-bar" style="margin: 16px 0; display: flex; gap: 12px; padding-top: 16px; border-top: 1px solid #ebeef5">
         <el-button type="primary" plain icon="Plus" data-testid="project-add-drawing-button" @click="handleAddDrawing">图纸/工作量录入</el-button>
-        <el-button type="warning" plain icon="Plus" @click="handleAddVisa">新增签证单</el-button>
+        <el-button type="warning" plain icon="Plus" data-testid="project-add-visa-button" @click="handleAddVisa">新增签证单</el-button>
         <el-button type="info" plain icon="EditPen" @click="handleWorkspace(form.id!)">项目工作台</el-button>
       </div>
       <template #footer>
@@ -251,6 +251,41 @@
         </div>
       </template>
     </el-dialog>
+
+    <el-dialog v-model="visaDialog.visible" title="新增签证单" width="520px" append-to-body data-testid="project-visa-dialog" @closed="resetVisaForm">
+      <el-form :model="visaForm" label-width="100px" data-testid="project-visa-form">
+        <el-form-item label="签证原因">
+          <el-input v-model="visaForm.reason" placeholder="请输入签证原因" data-testid="project-visa-form-reason" />
+        </el-form-item>
+        <el-form-item label="内容依据">
+          <el-input v-model="visaForm.contentBasis" type="textarea" :rows="4" placeholder="请输入内容依据" data-testid="project-visa-form-basis" />
+        </el-form-item>
+        <el-form-item label="金额">
+          <el-input-number v-model="visaForm.amount" :precision="2" :min="0" style="width: 100%" data-testid="project-visa-form-amount" />
+        </el-form-item>
+        <el-form-item label="签证日期">
+          <el-date-picker
+            v-model="visaForm.visaDate"
+            type="date"
+            value-format="YYYY-MM-DD HH:mm:ss"
+            style="width: 100%"
+            data-testid="project-visa-form-date"
+          />
+        </el-form-item>
+        <el-form-item label="计入项目">
+          <el-switch v-model="visaForm.includeInProject" />
+        </el-form-item>
+        <el-form-item label="备注">
+          <el-input v-model="visaForm.remark" type="textarea" :rows="3" placeholder="请输入备注内容" data-testid="project-visa-form-remark" />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <div class="dialog-footer">
+          <el-button @click="visaDialog.visible = false">取消</el-button>
+          <el-button type="primary" data-testid="project-visa-submit-button" @click="submitVisaForm">保存</el-button>
+        </div>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -259,9 +294,10 @@ import { computed, ref, onMounted, reactive, toRefs, getCurrentInstance, Compone
 import { useRoute, useRouter } from 'vue-router';
 import { listProject, addProject, updateProject, delProject, getProject } from '@/api/docman/project';
 import { saveProjectDrawing } from '@/api/docman/drawing';
+import { saveProjectVisa } from '@/api/docman/visa';
 import { archiveProject } from '@/api/docman/archive';
 import { listProjectType } from '@/api/docman/projectType';
-import { DocProject, DocProjectQuery, DocProjectForm, DocProjectDrawingForm, DocmanId } from '@/api/docman/types';
+import { DocProject, DocProjectQuery, DocProjectForm, DocProjectDrawingForm, DocProjectVisaForm, DocmanId } from '@/api/docman/types';
 import { getProjectWorkspace } from '@/api/docman/workspace';
 import { useUserStore } from '@/store/modules/user';
 import { handleApiError } from '@/utils/error';
@@ -291,6 +327,9 @@ const dialog = reactive<DialogOption>({
 const drawingDialog = reactive({
   visible: false
 });
+const visaDialog = reactive({
+  visible: false
+});
 const dialogMode = ref<'edit' | 'detail'>('edit');
 
 const initFormData: DocProjectForm = {
@@ -315,6 +354,15 @@ const initDrawingFormData: DocProjectDrawingForm = {
   includeInProject: true,
   remark: ''
 };
+const initVisaFormData: DocProjectVisaForm = {
+  projectId: '',
+  reason: '',
+  contentBasis: '',
+  amount: 0,
+  visaDate: '',
+  includeInProject: true,
+  remark: ''
+};
 
 const data = reactive({
   form: { ...initFormData },
@@ -335,6 +383,7 @@ const data = reactive({
 
 const { queryParams, form, rules } = toRefs(data);
 const drawingForm = reactive<DocProjectDrawingForm>({ ...initDrawingFormData });
+const visaForm = reactive<DocProjectVisaForm>({ ...initVisaFormData });
 
 function resolveSafeOwnerId(): DocmanId | undefined {
   const ownerId = String(userStore.userId ?? '').trim();
@@ -383,6 +432,13 @@ function reset() {
 function resetDrawingForm() {
   Object.assign(drawingForm, {
     ...initDrawingFormData,
+    projectId: form.value.id || ''
+  });
+}
+
+function resetVisaForm() {
+  Object.assign(visaForm, {
+    ...initVisaFormData,
     projectId: form.value.id || ''
   });
 }
@@ -438,7 +494,8 @@ function handleAddDrawing() {
 /** 新增签证单按钮 */
 function handleAddVisa() {
   if (form.value.id) {
-    router.push(`/docman/visa/${form.value.id}`);
+    resetVisaForm();
+    visaDialog.visible = true;
   }
 }
 
@@ -446,14 +503,18 @@ function handleAddVisa() {
 function cancel() {
   dialog.visible = false;
   drawingDialog.visible = false;
+  visaDialog.visible = false;
   reset();
   resetDrawingForm();
+  resetVisaForm();
 }
 
 function handleProjectDialogClose() {
   drawingDialog.visible = false;
+  visaDialog.visible = false;
   reset();
   resetDrawingForm();
+  resetVisaForm();
 }
 
 async function submitDrawingForm() {
@@ -469,6 +530,22 @@ async function submitDrawingForm() {
     drawingDialog.visible = false;
   } catch (error) {
     handleApiError(error, '图纸保存失败，请稍后重试');
+  }
+}
+
+async function submitVisaForm() {
+  if (!form.value.id) {
+    return;
+  }
+  try {
+    await saveProjectVisa({
+      ...visaForm,
+      projectId: form.value.id
+    });
+    proxy?.$modal.msgSuccess('签证保存成功');
+    visaDialog.visible = false;
+  } catch (error) {
+    handleApiError(error, '签证保存失败，请稍后重试');
   }
 }
 
@@ -490,7 +567,9 @@ const submitForm = () => {
         }
         dialog.visible = false;
         drawingDialog.visible = false;
+        visaDialog.visible = false;
         resetDrawingForm();
+        resetVisaForm();
         getList();
       } catch (error) {
         handleApiError(error, '操作失败，请稍后重试');

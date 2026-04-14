@@ -91,4 +91,50 @@ test.describe('P1 项目管理真实流程', () => {
       await deleteProject(page, project.id).catch(() => undefined);
     }
   });
+
+  test('项目编辑中的新增签证单应打开新增签证弹窗', async ({ page }) => {
+    const projectName = `pw-e2e-project-edit-visa-${Date.now()}`;
+    const visaReason = `签证原因-${Date.now()}`;
+
+    await login(page);
+    const project = await createTempProject(page, projectName);
+
+    try {
+      await page.goto(DOCMAN_URLS.project);
+      await expect(page.locator('[data-testid="project-page"], .app-container').first()).toBeVisible({ timeout: 20000 });
+
+      await page.getByTestId('project-search-name').fill(projectName);
+      await page.getByTestId('project-search-submit').click();
+
+      const projectTable = page.locator('[data-testid="project-table"]');
+      const projectRow = projectTable.locator('.el-table__row').filter({ hasText: projectName }).first();
+      await expect(projectRow).toBeVisible({ timeout: 15000 });
+      await projectRow.getByRole('button', { name: '编辑' }).click();
+
+      const projectDialog = page.getByTestId('project-dialog');
+      await expect(projectDialog).toBeVisible({ timeout: 10000 });
+
+      await projectDialog.getByTestId('project-add-visa-button').click();
+      await expect(page).toHaveURL(DOCMAN_URLS.project);
+
+      const visaDialog = page.getByTestId('project-visa-dialog');
+      await expect(visaDialog).toBeVisible({ timeout: 10000 });
+      await expect(visaDialog).toContainText('新增签证单');
+      await visaDialog.getByTestId('project-visa-form-reason').fill(visaReason);
+      await visaDialog.getByTestId('project-visa-form-basis').fill('项目编辑弹窗内新增签证');
+      await visaDialog.getByTestId('project-visa-form-amount').locator('input').first().fill('123.45');
+      await visaDialog.getByTestId('project-visa-form-date').locator('input').first().fill('2026-04-14 00:00:00');
+
+      const saveVisaResponse = page.waitForResponse((response) => {
+        return response.url().includes('/docman/project/visa') && response.request().method() === 'POST';
+      });
+      await visaDialog.getByTestId('project-visa-submit-button').click();
+      expect((await saveVisaResponse).ok()).toBeTruthy();
+      await expect(successToast(page, '签证保存成功')).toBeVisible({ timeout: 10000 });
+      await expect(visaDialog).toBeHidden({ timeout: 10000 });
+      await expect(projectDialog).toBeVisible({ timeout: 10000 });
+    } finally {
+      await deleteProject(page, project.id).catch(() => undefined);
+    }
+  });
 });
