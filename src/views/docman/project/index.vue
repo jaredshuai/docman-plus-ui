@@ -54,23 +54,38 @@
     </el-row>
 
     <el-table v-loading="loading" :data="projectList" border stripe :row-key="(row) => row.id" data-testid="project-table">
-      <el-table-column prop="name" label="项目名称" min-width="180" />
-      <el-table-column label="客户类型" width="130">
+      <el-table-column prop="name" label="项目名称" min-width="180" show-overflow-tooltip />
+      <el-table-column label="电信立项时间" min-width="130" align="center">
+        <template #default="{ row }">
+          {{ row.telecomProjectDate || '-' }}
+        </template>
+      </el-table-column>
+      <el-table-column label="计划开工时间" min-width="130" align="center">
+        <template #default="{ row }">
+          {{ row.planStartDate || '-' }}
+        </template>
+      </el-table-column>
+      <el-table-column label="计划完工时间" min-width="130" align="center">
+        <template #default="{ row }">
+          {{ row.planEndDate || '-' }}
+        </template>
+      </el-table-column>
+      <el-table-column label="客户类型" min-width="120">
         <template #default="{ row }">
           {{ resolveDictLabel(doc_customer_type, row.customerType, row.customerType || '-') }}
         </template>
       </el-table-column>
-      <el-table-column label="业务类型" width="130">
+      <el-table-column label="业务类型" min-width="120">
         <template #default="{ row }">
           {{ resolveDictLabel(doc_business_type, row.businessType, row.businessType || '-') }}
         </template>
       </el-table-column>
-      <el-table-column label="项目类型" width="140">
+      <el-table-column label="项目类型" min-width="130" show-overflow-tooltip>
         <template #default="{ row }">
           {{ resolveProjectTypeName(row.projectTypeCode) }}
         </template>
       </el-table-column>
-      <el-table-column prop="ownerName" label="负责人" width="120" />
+      <el-table-column prop="ownerName" label="负责人" min-width="110" show-overflow-tooltip />
       <el-table-column label="操作" align="center" width="320" class-name="small-padding fixed-width">
         <template #default="{ row }">
           <el-button v-hasPermi="['docman:project:edit']" size="small" type="primary" plain @click="handleUpdate(row)">编辑</el-button>
