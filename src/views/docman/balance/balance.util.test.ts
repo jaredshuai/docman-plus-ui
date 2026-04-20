@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { canSubmitBalance, createBalanceForm } from './balance.util';
+import { canSubmitBalance, createBalanceForm, formatScopedCount, isMissingProjectContextError } from './balance.util';
 
 describe('balance util', () => {
   it('disables submit when estimate snapshot is missing', () => {
@@ -13,5 +13,17 @@ describe('balance util', () => {
       materialPrice: 18.5,
       balanceRemark: 'done'
     });
+  });
+
+  it('formats scoped counts with sensible fallbacks', () => {
+    expect(formatScopedCount(5, 3)).toBe('5 / 3');
+    expect(formatScopedCount(5, undefined)).toBe('5 / 5');
+    expect(formatScopedCount(undefined, undefined)).toBe('- / -');
+  });
+
+  it('detects stale or inaccessible project context errors', () => {
+    expect(isMissingProjectContextError('项目不存在')).toBe(true);
+    expect(isMissingProjectContextError('你无权访问该项目')).toBe(true);
+    expect(isMissingProjectContextError('项目经理页面加载失败')).toBe(false);
   });
 });

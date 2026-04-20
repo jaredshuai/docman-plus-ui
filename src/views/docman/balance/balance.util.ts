@@ -10,3 +10,13 @@ export function createBalanceForm(balance?: DocProjectBalanceAdjustment) {
     balanceRemark: balance?.balanceRemark ?? ''
   };
 }
+
+export function formatScopedCount(total?: number | null, included?: number | null): string {
+  const totalText = typeof total === 'number' ? String(total) : '-';
+  const includedText = typeof included === 'number' ? String(included) : typeof total === 'number' ? String(total) : '-';
+  return `${totalText} / ${includedText}`;
+}
+
+export function isMissingProjectContextError(message: string): boolean {
+  return ['项目不存在', '你无权访问该项目'].some((pattern) => message.includes(pattern));
+}

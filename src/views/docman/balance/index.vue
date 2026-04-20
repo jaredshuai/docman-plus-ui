@@ -5,8 +5,8 @@
     </el-page-header>
 
     <el-alert
-      v-if="!hasProjectId"
-      title="请先在项目管理中选择项目后再进入项目经理页面"
+      v-if="projectContextMessage"
+      :title="projectContextMessage"
       type="info"
       show-icon
       :closable="false"
@@ -15,20 +15,29 @@
 
     <template v-else>
       <el-alert v-if="loadError" :title="loadError" type="warning" show-icon :closable="false" class="mb8" style="margin-top: 16px" />
+      <el-alert
+        v-else-if="workspaceWarning"
+        :title="workspaceWarning"
+        type="warning"
+        show-icon
+        :closable="false"
+        class="mb8"
+        style="margin-top: 16px"
+      />
 
       <el-card v-loading="loading" style="margin-top: 16px">
         <template #header>项目概览</template>
-        <el-descriptions v-if="workspace" :column="3" border>
-          <el-descriptions-item label="项目名称">{{ workspace.projectName }}</el-descriptions-item>
-          <el-descriptions-item label="当前节点">{{ workspace.currentNodeName }}</el-descriptions-item>
-          <el-descriptions-item label="运行状态">{{ workspace.runtimeStatus }}</el-descriptions-item>
+        <el-descriptions v-if="projectDetail" :column="3" border>
+          <el-descriptions-item label="项目名称">{{ projectDetail.name }}</el-descriptions-item>
+          <el-descriptions-item label="当前节点">{{ workspace?.currentNodeName || '-' }}</el-descriptions-item>
+          <el-descriptions-item label="运行状态">{{ workspace?.runtimeStatus || '-' }}</el-descriptions-item>
           <el-descriptions-item label="图纸数量 / 计入口径">
-            {{ workspace.drawingCount }} / {{ workspace.includedDrawingCount ?? workspace.drawingCount }}
+            {{ drawingCountSummary }}
           </el-descriptions-item>
           <el-descriptions-item label="签证数量 / 计入口径">
-            {{ workspace.visaCount }} / {{ workspace.includedVisaCount ?? workspace.visaCount }}
+            {{ visaCountSummary }}
           </el-descriptions-item>
-          <el-descriptions-item label="项目类型">{{ workspace.projectTypeCode || '-' }}</el-descriptions-item>
+          <el-descriptions-item label="项目类型">{{ projectDetail.projectTypeCode || workspace?.projectTypeCode || '-' }}</el-descriptions-item>
         </el-descriptions>
       </el-card>
 
@@ -98,11 +107,12 @@ import { useRoute } from 'vue-router';
 import { ElMessage } from 'element-plus';
 import { getProjectLatestBalance, saveProjectBalance } from '@/api/docman/balance';
 import { getProjectLatestEstimate } from '@/api/docman/estimate';
+import { getProject } from '@/api/docman/project';
 import { getProjectWorkspace } from '@/api/docman/workspace';
-import type { DocProjectBalanceAdjustment, DocProjectEstimateSnapshot, DocProjectWorkspace } from '@/api/docman/types';
+import type { DocProject, DocProjectBalanceAdjustment, DocProjectEstimateSnapshot, DocProjectWorkspace } from '@/api/docman/types';
 import { useRouteProjectId } from '@/hooks/useRouteProjectId';
-import { handleApiError } from '@/utils/error';
-import { canSubmitBalance, createBalanceForm } from './balance.util';
+import { getErrorMessage, handleApiError } from '@/utils/error';
+import { canSubmitBalance, createBalanceForm, formatScopedCount, isMissingProjectContextError } from './balance.util';
 
 const route = useRoute();
 const { projectId, hasProjectId } = useRouteProjectId(route);
@@ -110,15 +120,25 @@ const { projectId, hasProjectId } = useRouteProjectId(route);
 const loading = ref(false);
 const saving = ref(false);
 const loadError = ref('');
+const workspaceWarning = ref('');
+const invalidProjectMessage = ref('');
+const projectDetail = ref<DocProject>();
 const workspace = ref<DocProjectWorkspace>();
 const estimateSnapshot = ref<DocProjectEstimateSnapshot>();
 const latestBalance = ref<DocProjectBalanceAdjustment>();
 
 const balanceForm = reactive(createBalanceForm());
 const canSave = computed(() => canSubmitBalance(estimateSnapshot.value));
+const projectContextMessage = computed(() => invalidProjectMessage.value || (!hasProjectId.value ? '请先在项目管理中选择项目后再进入项目经理页面' : ''));
+const drawingCountSummary = computed(() => formatScopedCount(workspace.value?.drawingCount, workspace.value?.includedDrawingCount));
+const visaCountSummary = computed(() => formatScopedCount(workspace.value?.visaCount, workspace.value?.includedVisaCount));
 
 async function loadAll() {
   if (!hasProjectId.value) {
+    invalidProjectMessage.value = '';
+    workspaceWarning.value = '';
+    loadError.value = '';
+    projectDetail.value = undefined;
     workspace.value = undefined;
     estimateSnapshot.value = undefined;
     latestBalance.value = undefined;
@@ -127,9 +147,15 @@ async function loadAll() {
   }
   loading.value = true;
   loadError.value = '';
+  workspaceWarning.value = '';
+  invalidProjectMessage.value = '';
   try {
+    projectDetail.value = await getProject(projectId.value);
     const [workspaceRes, estimateRes, balanceRes] = await Promise.all([
-      getProjectWorkspace(projectId.value),
+      getProjectWorkspace(projectId.value).catch((error) => {
+        workspaceWarning.value = getErrorMessage(error) || '项目工作流信息暂不可用，不影响查看和录入平料';
+        return { data: undefined };
+      }),
       getProjectLatestEstimate(projectId.value).catch(() => ({ data: undefined })),
       getProjectLatestBalance(projectId.value).catch(() => ({ data: undefined }))
     ]);
@@ -138,7 +164,20 @@ async function loadAll() {
     latestBalance.value = balanceRes.data;
     Object.assign(balanceForm, createBalanceForm(balanceRes.data));
   } catch (error) {
-    loadError.value = handleApiError(error, '项目经理页面加载失败');
+    const message = getErrorMessage(error);
+    if (isMissingProjectContextError(message)) {
+      invalidProjectMessage.value = '当前项目不存在或你已无权访问，请返回项目管理重新选择项目';
+      projectDetail.value = undefined;
+      workspace.value = undefined;
+      estimateSnapshot.value = undefined;
+      latestBalance.value = undefined;
+      Object.assign(balanceForm, createBalanceForm());
+      return;
+    }
+    loadError.value = handleApiError(error, '项目经理页面加载失败', {
+      showMessage: false,
+      preferErrorMessage: true
+    });
   } finally {
     loading.value = false;
   }
