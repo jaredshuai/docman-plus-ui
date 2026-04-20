@@ -167,34 +167,46 @@
             </el-form-item>
           </el-col>
           <el-col :span="12">
-            <el-form-item label="电信编号" prop="telecomCode">
-              <el-input v-model="form.telecomCode" placeholder="请输入电信编号" />
+            <el-form-item label="负责人" prop="ownerId">
+              <el-input v-model="ownerDisplayName" readonly placeholder="请选择负责人" data-testid="project-form-owner-name">
+                <template #append>
+                  <el-button @click="openOwnerSelect" :disabled="dialogMode === 'detail'">选择</el-button>
+                </template>
+              </el-input>
             </el-form-item>
           </el-col>
         </el-row>
         <el-row :gutter="16">
+          <el-col :span="12">
+            <el-form-item label="电信编号" prop="telecomCode">
+              <el-input v-model="form.telecomCode" placeholder="请输入电信编号" />
+            </el-form-item>
+          </el-col>
           <el-col :span="12">
             <el-form-item label="翔云编号" prop="xiangyunCode">
               <el-input v-model="form.xiangyunCode" placeholder="请输入翔云编号" />
             </el-form-item>
           </el-col>
+        </el-row>
+        <el-row :gutter="16">
           <el-col :span="12">
             <el-form-item label="电信立项时间" prop="telecomProjectDate">
               <el-date-picker v-model="form.telecomProjectDate" type="date" placeholder="选择日期" value-format="YYYY-MM-DD" style="width: 100%" />
             </el-form-item>
           </el-col>
-        </el-row>
-        <el-row :gutter="16">
           <el-col :span="12">
             <el-form-item label="计划开工时间" prop="planStartDate">
               <el-date-picker v-model="form.planStartDate" type="date" placeholder="选择日期" value-format="YYYY-MM-DD" style="width: 100%" />
             </el-form-item>
           </el-col>
+        </el-row>
+        <el-row :gutter="16">
           <el-col :span="12">
             <el-form-item label="计划完工时间" prop="planEndDate">
               <el-date-picker v-model="form.planEndDate" type="date" placeholder="选择日期" value-format="YYYY-MM-DD" style="width: 100%" />
             </el-form-item>
           </el-col>
+          <el-col :span="12"></el-col>
         </el-row>
         <el-row :gutter="16">
           <el-col :span="24">
@@ -301,6 +313,8 @@
         </div>
       </template>
     </el-dialog>
+
+    <UserSelect ref="ownerSelectRef" :multiple="false" :data="form.ownerId" @confirm-call-back="handleOwnerSelect" />
   </div>
 </template>
 
@@ -314,6 +328,8 @@ import { archiveProject } from '@/api/docman/archive';
 import { listProjectType } from '@/api/docman/projectType';
 import { DocProject, DocProjectQuery, DocProjectForm, DocProjectDrawingForm, DocProjectVisaForm, DocmanId } from '@/api/docman/types';
 import { getProjectWorkspace } from '@/api/docman/workspace';
+import UserSelect from '@/components/UserSelect';
+import { UserVO } from '@/api/system/user/types';
 import { useUserStore } from '@/store/modules/user';
 import { handleApiError } from '@/utils/error';
 import { resolveDictLabel } from '../docmanDict.util';
@@ -331,9 +347,11 @@ const total = ref(0);
 const loading = ref(true);
 const loadError = ref('');
 const projectTypeList = ref<Array<{ code: string; name: string }>>([]);
+const ownerDisplayName = ref('');
 
 const queryRef = ref<ElFormInstance>();
 const projectFormRef = ref<ElFormInstance>();
+const ownerSelectRef = ref<InstanceType<typeof UserSelect>>();
 
 const dialog = reactive<DialogOption>({
   visible: false,
@@ -350,6 +368,7 @@ const dialogMode = ref<'edit' | 'detail'>('edit');
 const initFormData: DocProjectForm = {
   id: undefined,
   name: '',
+  ownerId: undefined,
   projectTypeCode: 'telecom',
   customerType: 'telecom',
   businessType: 'pipeline',
@@ -391,6 +410,7 @@ const data = reactive({
   } as DocProjectQuery,
   rules: {
     name: [{ required: true, message: '项目名称不能为空', trigger: 'blur' }],
+    ownerId: [{ required: true, message: '负责人不能为空', trigger: 'change' }],
     customerType: [{ required: true, message: '客户类型不能为空', trigger: 'change' }],
     businessType: [{ required: true, message: '业务类型不能为空', trigger: 'change' }]
   }
@@ -403,6 +423,10 @@ const visaForm = reactive<DocProjectVisaForm>({ ...initVisaFormData });
 function resolveSafeOwnerId(): DocmanId | undefined {
   const ownerId = String(userStore.userId ?? '').trim();
   return /^\d+$/.test(ownerId) && ownerId !== '0' ? ownerId : undefined;
+}
+
+function resolveSafeOwnerName(): string {
+  return String(userStore.nickname ?? '').trim();
 }
 
 function resolveProjectTypeName(projectTypeCode?: string) {
@@ -440,8 +464,12 @@ function resetQuery() {
 
 /** 重置操作表单 */
 function reset() {
-  form.value = { ...initFormData };
-  projectFormRef.value?.resetFields();
+  form.value = {
+    ...initFormData,
+    ownerId: resolveSafeOwnerId()
+  };
+  ownerDisplayName.value = resolveSafeOwnerName();
+  projectFormRef.value?.clearValidate();
 }
 
 function resetDrawingForm() {
@@ -475,6 +503,7 @@ function handleUpdate(row: DocProject) {
   Object.assign(form.value, {
     id: row.id,
     name: row.name,
+    ownerId: row.ownerId,
     projectTypeCode: row.projectTypeCode,
     customerType: row.customerType,
     businessType: row.businessType,
@@ -486,6 +515,17 @@ function handleUpdate(row: DocProject) {
     planEndDate: (row as any).planEndDate || '',
     remark: row.remark
   });
+  ownerDisplayName.value = row.ownerName || '';
+}
+
+function openOwnerSelect() {
+  ownerSelectRef.value?.open();
+}
+
+function handleOwnerSelect(data: UserVO[]) {
+  const [user] = data;
+  form.value.ownerId = user?.userId;
+  ownerDisplayName.value = user?.nickName || user?.userName || '';
 }
 
 /** 详情按钮操作 */
@@ -573,11 +613,7 @@ const submitForm = () => {
           await updateProject(form.value);
           proxy?.$modal.msgSuccess('修改成功');
         } else {
-          const ownerId = resolveSafeOwnerId();
-          await addProject({
-            ...form.value,
-            ...(ownerId ? { ownerId } : {})
-          } as DocProjectForm & { ownerId?: DocmanId });
+          await addProject(form.value);
           proxy?.$modal.msgSuccess('新增成功');
         }
         dialog.visible = false;

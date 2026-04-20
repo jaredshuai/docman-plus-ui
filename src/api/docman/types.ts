@@ -38,6 +38,7 @@ export interface DocProjectQuery extends PageQuery {
 export interface DocProjectForm {
   id?: DocmanId;
   name: string;
+  ownerId?: DocmanId;
   projectTypeCode?: string;
   customerType: string;
   businessType: string;
