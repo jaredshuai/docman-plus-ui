@@ -13,10 +13,14 @@ export interface DocProject {
   businessType: string;
   documentCategory: string;
   telecomCode?: string;
+  dianxinCode?: string;
   xiangyunCode?: string;
   telecomProjectDate?: string;
+  dianxinInitiationTime?: string;
   planStartDate?: string;
+  startTime?: string;
   planEndDate?: string;
+  endTime?: string;
   status: string;
   ownerId: DocmanId;
   ownerName?: string;
@@ -48,6 +52,22 @@ export interface DocProjectForm {
   telecomProjectDate?: string;
   planStartDate?: string;
   planEndDate?: string;
+  remark?: string;
+}
+
+export interface DocProjectSubmitPayload {
+  id?: DocmanId;
+  name: string;
+  ownerId?: DocmanId;
+  projectTypeCode?: string;
+  customerType: string;
+  businessType: string;
+  documentCategory: string;
+  dianxinCode?: string;
+  xiangyunCode?: string;
+  dianxinInitiationTime?: string | null;
+  startTime?: string | null;
+  endTime?: string | null;
   remark?: string;
 }
 

@@ -47,6 +47,48 @@ test.describe('P1 项目管理真实流程', () => {
     await expect(page.getByText('删除成功', { exact: true })).toBeVisible({ timeout: 10000 });
   });
 
+  test('编辑项目时无需重新选择负责人也可以保存', async ({ page }) => {
+    const projectName = `pw-e2e-project-edit-owner-${Date.now()}`;
+
+    await login(page);
+    const project = await createTempProject(page, projectName);
+
+    try {
+      await page.goto(DOCMAN_URLS.project);
+      await expect(page.locator('[data-testid="project-page"], .app-container').first()).toBeVisible({ timeout: 20000 });
+
+      await page.getByTestId('project-search-name').fill(projectName);
+      await page.getByTestId('project-search-submit').click();
+
+      const projectTable = page.locator('[data-testid="project-table"]');
+      const projectRow = projectTable.locator('.el-table__row').filter({ hasText: projectName }).first();
+      await expect(projectRow).toBeVisible({ timeout: 15000 });
+      await projectRow.getByRole('button', { name: '编辑' }).click();
+
+      const projectDialog = page.getByTestId('project-dialog');
+      await expect(projectDialog).toBeVisible({ timeout: 10000 });
+
+      const updateRequestPromise = page.waitForRequest((request) => {
+        return request.url().includes('/docman/project') && request.method() === 'PUT';
+      });
+      const updateResponsePromise = page.waitForResponse((response) => {
+        return response.url().includes('/docman/project') && response.request().method() === 'PUT';
+      });
+
+      await projectDialog.getByTestId('project-submit-button').click();
+
+      const updateRequest = await updateRequestPromise;
+      const payload = updateRequest.postDataJSON() as Record<string, unknown>;
+      expect(payload.ownerId, 'edit payload should retain ownerId').toBeTruthy();
+      expect((await updateResponsePromise).ok()).toBeTruthy();
+
+      await expect(page.getByText('修改成功', { exact: true })).toBeVisible({ timeout: 10000 });
+      await expect(projectDialog).toBeHidden({ timeout: 10000 });
+    } finally {
+      await deleteProject(page, project.id).catch(() => undefined);
+    }
+  });
+
   test('项目编辑中的图纸工作量录入应打开新增图纸弹窗', async ({ page }) => {
     const projectName = `pw-e2e-project-edit-drawing-${Date.now()}`;
     const drawingCode = `DWG-PROJECT-${Date.now()}`;

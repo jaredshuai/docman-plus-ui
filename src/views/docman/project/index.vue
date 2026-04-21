@@ -319,14 +319,22 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, onMounted, reactive, toRefs, getCurrentInstance, ComponentInternalInstance, watch } from 'vue';
+import { computed, ref, onMounted, reactive, toRefs, getCurrentInstance, ComponentInternalInstance, watch, nextTick } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { listProject, addProject, updateProject, delProject, getProject } from '@/api/docman/project';
 import { saveProjectDrawing } from '@/api/docman/drawing';
 import { saveProjectVisa } from '@/api/docman/visa';
 import { archiveProject } from '@/api/docman/archive';
 import { listProjectType } from '@/api/docman/projectType';
-import { DocProject, DocProjectQuery, DocProjectForm, DocProjectDrawingForm, DocProjectVisaForm, DocmanId } from '@/api/docman/types';
+import {
+  DocProject,
+  DocProjectQuery,
+  DocProjectForm,
+  DocProjectDrawingForm,
+  DocProjectVisaForm,
+  DocProjectSubmitPayload,
+  DocmanId
+} from '@/api/docman/types';
 import { getProjectWorkspace } from '@/api/docman/workspace';
 import UserSelect from '@/components/UserSelect';
 import { UserVO } from '@/api/system/user/types';
@@ -433,6 +441,60 @@ function resolveProjectTypeName(projectTypeCode?: string) {
   return projectTypeList.value.find((item) => item.code === projectTypeCode)?.name || projectTypeCode || '-';
 }
 
+function normalizeProjectDate(value?: string) {
+  const text = String(value ?? '').trim();
+  const match = text.match(/\d{4}-\d{2}-\d{2}/);
+  return match?.[0] || '';
+}
+
+function mapProjectToForm(project: Partial<DocProject>): DocProjectForm {
+  return {
+    ...initFormData,
+    id: project.id,
+    name: project.name || '',
+    ownerId: project.ownerId,
+    projectTypeCode: project.projectTypeCode || initFormData.projectTypeCode,
+    customerType: project.customerType || initFormData.customerType,
+    businessType: project.businessType || initFormData.businessType,
+    documentCategory: project.documentCategory || '',
+    telecomCode: project.telecomCode || project.dianxinCode || '',
+    xiangyunCode: project.xiangyunCode || '',
+    telecomProjectDate: normalizeProjectDate(project.telecomProjectDate || project.dianxinInitiationTime),
+    planStartDate: normalizeProjectDate(project.planStartDate || project.startTime),
+    planEndDate: normalizeProjectDate(project.planEndDate || project.endTime),
+    remark: project.remark || ''
+  };
+}
+
+function mapProjectFormToPayload(projectForm: DocProjectForm): DocProjectSubmitPayload {
+  return {
+    id: projectForm.id,
+    name: projectForm.name.trim(),
+    ownerId: projectForm.ownerId,
+    projectTypeCode: projectForm.projectTypeCode,
+    customerType: projectForm.customerType,
+    businessType: projectForm.businessType,
+    documentCategory: projectForm.documentCategory.trim(),
+    dianxinCode: projectForm.telecomCode?.trim() || '',
+    xiangyunCode: projectForm.xiangyunCode?.trim() || '',
+    dianxinInitiationTime: projectForm.telecomProjectDate || null,
+    startTime: projectForm.planStartDate || null,
+    endTime: projectForm.planEndDate || null,
+    remark: projectForm.remark?.trim() || ''
+  };
+}
+
+async function openProjectEditor(project: Partial<DocProject>) {
+  reset();
+  dialogMode.value = 'edit';
+  dialog.title = '修改项目';
+  form.value = mapProjectToForm(project);
+  ownerDisplayName.value = String(project.ownerName ?? '').trim();
+  dialog.visible = true;
+  await nextTick();
+  projectFormRef.value?.clearValidate();
+}
+
 /** 查询项目列表 */
 const getList = async () => {
   loading.value = true;
@@ -490,32 +552,18 @@ function resetVisaForm() {
 function handleAdd() {
   reset();
   dialogMode.value = 'edit';
-  dialog.visible = true;
   dialog.title = '新增项目';
+  dialog.visible = true;
 }
 
 /** 修改按钮操作 */
-function handleUpdate(row: DocProject) {
-  reset();
-  dialogMode.value = 'edit';
-  dialog.visible = true;
-  dialog.title = '修改项目';
-  Object.assign(form.value, {
-    id: row.id,
-    name: row.name,
-    ownerId: row.ownerId,
-    projectTypeCode: row.projectTypeCode,
-    customerType: row.customerType,
-    businessType: row.businessType,
-    documentCategory: row.documentCategory,
-    telecomCode: (row as any).telecomCode || '',
-    xiangyunCode: (row as any).xiangyunCode || '',
-    telecomProjectDate: (row as any).telecomProjectDate || '',
-    planStartDate: (row as any).planStartDate || '',
-    planEndDate: (row as any).planEndDate || '',
-    remark: row.remark
-  });
-  ownerDisplayName.value = row.ownerName || '';
+async function handleUpdate(row: DocProject) {
+  try {
+    const project = await getProject(row.id);
+    await openProjectEditor({ ...row, ...project });
+  } catch (error) {
+    handleApiError(error, '项目信息加载失败，请稍后重试');
+  }
 }
 
 function openOwnerSelect() {
@@ -526,6 +574,7 @@ function handleOwnerSelect(data: UserVO[]) {
   const [user] = data;
   form.value.ownerId = user?.userId;
   ownerDisplayName.value = user?.nickName || user?.userName || '';
+  projectFormRef.value?.validateField('ownerId', () => undefined);
 }
 
 /** 详情按钮操作 */
@@ -609,11 +658,12 @@ const submitForm = () => {
   projectFormRef.value?.validate(async (valid: boolean) => {
     if (valid) {
       try {
+        const payload = mapProjectFormToPayload(form.value);
         if (form.value.id != undefined) {
-          await updateProject(form.value);
+          await updateProject(payload);
           proxy?.$modal.msgSuccess('修改成功');
         } else {
-          await addProject(form.value);
+          await addProject(payload);
           proxy?.$modal.msgSuccess('新增成功');
         }
         dialog.visible = false;
@@ -725,7 +775,7 @@ async function tryOpenProjectEditorFromRoute() {
   }
   try {
     const project = await getProject(projectId);
-    handleUpdate(project);
+    await openProjectEditor(project);
   } catch (error) {
     handleApiError(error, '项目信息加载失败，请稍后重试');
   } finally {
