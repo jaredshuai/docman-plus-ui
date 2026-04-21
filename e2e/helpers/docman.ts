@@ -30,7 +30,7 @@ async function getAuthHeaders(page: Page): Promise<Record<string, string>> {
   };
 }
 
-async function requestJson<T>(page: Page, path: string, options: { method?: 'GET' | 'POST' | 'DELETE'; data?: unknown } = {}): Promise<T> {
+async function requestJson<T>(page: Page, path: string, options: { method?: 'GET' | 'POST' | 'PUT' | 'DELETE'; data?: unknown } = {}): Promise<T> {
   const headers = await getAuthHeaders(page);
   const response = await page.request.fetch(`${DOCMAN_E2E_API_BASE_URL}${path}`, {
     method: options.method || 'GET',
@@ -46,7 +46,7 @@ async function requestJson<T>(page: Page, path: string, options: { method?: 'GET
 export async function requestDocmanJson<T>(
   page: Page,
   path: string,
-  options: { method?: 'GET' | 'POST' | 'DELETE'; data?: unknown } = {}
+  options: { method?: 'GET' | 'POST' | 'PUT' | 'DELETE'; data?: unknown } = {}
 ): Promise<T> {
   return await requestJson<T>(page, path, options);
 }

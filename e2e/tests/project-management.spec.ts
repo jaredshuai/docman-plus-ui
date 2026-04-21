@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 import { DOCMAN_URLS, login } from '../helpers/auth';
-import { createTempProject, deleteProject } from '../helpers/docman';
+import { createTempProject, deleteProject, getCurrentUserId, requestDocmanJson } from '../helpers/docman';
 
 function successToast(page: import('@playwright/test').Page, text: string) {
   return page.locator('.el-message__content').filter({ hasText: text }).last();
@@ -84,6 +84,46 @@ test.describe('P1 项目管理真实流程', () => {
 
       await expect(page.getByText('修改成功', { exact: true })).toBeVisible({ timeout: 10000 });
       await expect(projectDialog).toBeHidden({ timeout: 10000 });
+    } finally {
+      await deleteProject(page, project.id).catch(() => undefined);
+    }
+  });
+
+  test('项目管理表格应显示项目时间字段', async ({ page }) => {
+    const projectName = `pw-e2e-project-dates-${Date.now()}`;
+    await login(page);
+    const ownerId = await getCurrentUserId(page);
+    const project = await createTempProject(page, projectName);
+
+    try {
+      await requestDocmanJson<void>(page, '/docman/project', {
+        method: 'PUT',
+        data: {
+          id: project.id,
+          name: projectName,
+          projectTypeCode: 'telecom',
+          customerType: 'telecom',
+          businessType: 'pipeline',
+          documentCategory: 'e2e',
+          ownerId,
+          dianxinInitiationTime: '2026-04-01',
+          startTime: '2026-04-02',
+          endTime: '2026-04-03',
+          remark: 'Playwright date mapping coverage'
+        }
+      });
+
+      await page.goto(DOCMAN_URLS.project);
+      await expect(page.locator('[data-testid="project-page"], .app-container').first()).toBeVisible({ timeout: 20000 });
+
+      await page.getByTestId('project-search-name').fill(projectName);
+      await page.getByTestId('project-search-submit').click();
+
+      const projectRow = page.locator('[data-testid="project-table"] .el-table__row').filter({ hasText: projectName }).first();
+      await expect(projectRow).toBeVisible({ timeout: 15000 });
+      await expect(projectRow).toContainText('2026-04-01');
+      await expect(projectRow).toContainText('2026-04-02');
+      await expect(projectRow).toContainText('2026-04-03');
     } finally {
       await deleteProject(page, project.id).catch(() => undefined);
     }
