@@ -219,11 +219,14 @@
               <el-descriptions-item label="工作量项数">
                 {{ workloadSummary.totalItems }}
               </el-descriptions-item>
-              <el-descriptions-item label="计入估算项数">
-                {{ workloadSummary.includedItems }}
+              <el-descriptions-item label="技工合计">
+                {{ workloadSummary.technicianTotal || '-' }}
               </el-descriptions-item>
-              <el-descriptions-item label="数量合计">
-                {{ workloadSummary.totalQuantity || '-' }}
+              <el-descriptions-item label="普工合计">
+                {{ workloadSummary.generalWorkerTotal || '-' }}
+              </el-descriptions-item>
+              <el-descriptions-item label="材料数量合计">
+                {{ workloadSummary.materialQuantityTotal || '-' }}
               </el-descriptions-item>
               <el-descriptions-item label="最近条目">
                 {{ workloadSummary.latestDetailSummary || '-' }}

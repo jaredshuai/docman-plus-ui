@@ -115,7 +115,22 @@ export const FIELD_GROUP_REFERENCES: FieldGroupReference[] = [
   {
     value: 'workload_input',
     label: '图纸下工作量字段组',
-    fields: ['drawingId', 'workItemCode', 'workItemName', 'category', 'unit', 'quantity', 'includeInEstimate', 'remark'],
+    fields: [
+      'drawingId',
+      'workItemName',
+      'technician',
+      'technicianCoefficient',
+      'generalWorker',
+      'generalWorkerCoefficient',
+      'machineShift',
+      'machineShiftUnitPrice',
+      'machineShiftCoefficient',
+      'instrumentShift',
+      'instrumentShiftUnitPrice',
+      'instrumentShiftCoefficient',
+      'materialQuantity',
+      'materialUnitPrice'
+    ],
     completionRule: 'workload_exists'
   },
   {

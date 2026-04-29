@@ -59,8 +59,9 @@ export function isRedirectTask(task: Pick<DocProjectNodeTaskRuntime, 'taskCode' 
 
 export interface WorkloadSummary {
   totalItems: number;
-  includedItems: number;
-  totalQuantity: number;
+  technicianTotal: number;
+  generalWorkerTotal: number;
+  materialQuantityTotal: number;
   latestDetailSummary: string;
 }
 
@@ -68,10 +69,11 @@ export function summarizeWorkload(items: DocProjectDrawingWorkItem[] | undefined
   const safeItems = items ?? [];
   return {
     totalItems: safeItems.length,
-    includedItems: safeItems.filter((item) => item.includeInEstimate !== false).length,
-    totalQuantity: safeItems.reduce((sum, item) => sum + Number(item.quantity ?? 0), 0),
+    technicianTotal: safeItems.reduce((sum, item) => sum + Number(item.technician ?? 0), 0),
+    generalWorkerTotal: safeItems.reduce((sum, item) => sum + Number(item.generalWorker ?? 0), 0),
+    materialQuantityTotal: safeItems.reduce((sum, item) => sum + Number(item.materialQuantity ?? 0), 0),
     latestDetailSummary: safeItems
-      .map((item) => item.workItemName || item.workItemCode)
+      .map((item) => item.workItemName)
       .filter(Boolean)
       .slice(0, 3)
       .join('、')

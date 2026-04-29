@@ -81,24 +81,27 @@ describe('workspace util', () => {
         projectId: 1,
         drawingId: 10,
         workItemName: '杆路整治',
-        quantity: 12,
-        includeInEstimate: true
+        technician: 2,
+        generalWorker: 3,
+        materialQuantity: 12
       },
       {
         id: 2,
         projectId: 1,
         drawingId: 10,
-        workItemCode: 'GLBF',
-        quantity: 8,
-        includeInEstimate: false
+        workItemName: '光缆布放',
+        technician: 1,
+        generalWorker: 4,
+        materialQuantity: 8
       }
     ];
 
     expect(summarizeWorkload(records)).toEqual({
       totalItems: 2,
-      includedItems: 1,
-      totalQuantity: 20,
-      latestDetailSummary: '杆路整治、GLBF'
+      technicianTotal: 3,
+      generalWorkerTotal: 7,
+      materialQuantityTotal: 20,
+      latestDetailSummary: '杆路整治、光缆布放'
     });
   });
 });

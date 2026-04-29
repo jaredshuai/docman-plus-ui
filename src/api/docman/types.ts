@@ -133,13 +133,19 @@ export interface DocProjectDrawingWorkItem {
   id?: DocmanId;
   projectId: DocmanId;
   drawingId: DocmanId;
-  workItemCode?: string;
   workItemName?: string;
-  category?: string;
-  unit?: string;
-  quantity?: number;
-  includeInEstimate?: boolean;
-  remark?: string;
+  technician?: number;
+  technicianCoefficient?: number;
+  generalWorker?: number;
+  generalWorkerCoefficient?: number;
+  machineShift?: number;
+  machineShiftUnitPrice?: number;
+  machineShiftCoefficient?: number;
+  instrumentShift?: number;
+  instrumentShiftUnitPrice?: number;
+  instrumentShiftCoefficient?: number;
+  materialQuantity?: number;
+  materialUnitPrice?: number;
   createTime?: string;
   updateTime?: string;
 }
@@ -148,13 +154,19 @@ export interface DocProjectDrawingWorkItemForm {
   id?: DocmanId;
   projectId: DocmanId;
   drawingId: DocmanId;
-  workItemCode?: string;
   workItemName?: string;
-  category?: string;
-  unit?: string;
-  quantity?: number;
-  includeInEstimate?: boolean;
-  remark?: string;
+  technician?: number;
+  technicianCoefficient?: number;
+  generalWorker?: number;
+  generalWorkerCoefficient?: number;
+  machineShift?: number;
+  machineShiftUnitPrice?: number;
+  machineShiftCoefficient?: number;
+  instrumentShift?: number;
+  instrumentShiftUnitPrice?: number;
+  instrumentShiftCoefficient?: number;
+  materialQuantity?: number;
+  materialUnitPrice?: number;
 }
 
 export interface DocProjectVisa {
@@ -287,6 +299,56 @@ export interface DocProjectTypeForm {
   code: string;
   name: string;
   customerType: string;
+  description?: string;
+  sortOrder?: number;
+  status?: string;
+}
+
+export interface DocTelecomWorkloadItem {
+  id: DocmanId;
+  itemCode?: string;
+  itemName: string;
+  category?: string;
+  unit?: string;
+  defaultPrice?: number;
+  technician?: number;
+  technicianCoefficient?: number;
+  generalWorker?: number;
+  generalWorkerCoefficient?: number;
+  machineShift?: number;
+  machineShiftUnitPrice?: number;
+  machineShiftCoefficient?: number;
+  instrumentShift?: number;
+  instrumentShiftUnitPrice?: number;
+  instrumentShiftCoefficient?: number;
+  materialQuantity?: number;
+  materialUnitPrice?: number;
+  description?: string;
+  sortOrder?: number;
+  status?: string;
+  createTime?: string;
+  updateTime?: string;
+}
+
+export interface DocTelecomWorkloadItemForm {
+  id?: DocmanId;
+  itemCode?: string;
+  itemName: string;
+  category?: string;
+  unit?: string;
+  defaultPrice?: number;
+  technician?: number;
+  technicianCoefficient?: number;
+  generalWorker?: number;
+  generalWorkerCoefficient?: number;
+  machineShift?: number;
+  machineShiftUnitPrice?: number;
+  machineShiftCoefficient?: number;
+  instrumentShift?: number;
+  instrumentShiftUnitPrice?: number;
+  instrumentShiftCoefficient?: number;
+  materialQuantity?: number;
+  materialUnitPrice?: number;
   description?: string;
   sortOrder?: number;
   status?: string;

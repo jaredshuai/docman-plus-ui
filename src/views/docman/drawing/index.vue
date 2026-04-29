@@ -159,52 +159,148 @@
                   />
                 </template>
               </el-table-column>
-              <el-table-column label="编码" min-width="140">
-                <template #default="{ row }">
-                  <el-input
-                    v-model="row.workItemCode"
-                    placeholder="请输入编码"
-                    style="width: 100%"
-                    :disabled="row.saving || row.deleting"
-                    data-testid="drawing-workitem-inline-code"
-                  />
-                </template>
-              </el-table-column>
-              <el-table-column label="分类" min-width="140">
-                <template #default="{ row }">
-                  <el-input v-model="row.category" placeholder="请输入分类" style="width: 100%" :disabled="row.saving || row.deleting" />
-                </template>
-              </el-table-column>
-              <el-table-column label="单位" width="110">
-                <template #default="{ row }">
-                  <el-input v-model="row.unit" placeholder="单位" style="width: 100%" :disabled="row.saving || row.deleting" />
-                </template>
-              </el-table-column>
-              <el-table-column label="数量" width="150">
+              <el-table-column label="技工" width="140">
                 <template #default="{ row }">
                   <el-input-number
-                    v-model="row.quantity"
+                    v-model="row.technician"
                     :min="0"
-                    :precision="2"
+                    :precision="5"
                     controls-position="right"
                     style="width: 100%"
                     :disabled="row.saving || row.deleting"
-                    data-testid="drawing-workitem-inline-quantity"
                   />
                 </template>
               </el-table-column>
-              <el-table-column label="计入估算" width="100" align="center">
+              <el-table-column label="技工系数" width="140">
                 <template #default="{ row }">
-                  <el-switch
-                    v-model="row.includeInEstimate"
+                  <el-input-number
+                    v-model="row.technicianCoefficient"
+                    :min="0"
+                    :precision="5"
+                    controls-position="right"
+                    style="width: 100%"
                     :disabled="row.saving || row.deleting"
-                    data-testid="drawing-workitem-inline-estimate"
                   />
                 </template>
               </el-table-column>
-              <el-table-column label="备注" min-width="220">
+              <el-table-column label="普工" width="140">
                 <template #default="{ row }">
-                  <el-input v-model="row.remark" placeholder="请输入备注" style="width: 100%" :disabled="row.saving || row.deleting" />
+                  <el-input-number
+                    v-model="row.generalWorker"
+                    :min="0"
+                    :precision="5"
+                    controls-position="right"
+                    style="width: 100%"
+                    :disabled="row.saving || row.deleting"
+                  />
+                </template>
+              </el-table-column>
+              <el-table-column label="普工系数" width="140">
+                <template #default="{ row }">
+                  <el-input-number
+                    v-model="row.generalWorkerCoefficient"
+                    :min="0"
+                    :precision="5"
+                    controls-position="right"
+                    style="width: 100%"
+                    :disabled="row.saving || row.deleting"
+                  />
+                </template>
+              </el-table-column>
+              <el-table-column label="机械台班" width="140">
+                <template #default="{ row }">
+                  <el-input-number
+                    v-model="row.machineShift"
+                    :min="0"
+                    :precision="5"
+                    controls-position="right"
+                    style="width: 100%"
+                    :disabled="row.saving || row.deleting"
+                  />
+                </template>
+              </el-table-column>
+              <el-table-column label="机械台班单价" width="160">
+                <template #default="{ row }">
+                  <el-input-number
+                    v-model="row.machineShiftUnitPrice"
+                    :min="0"
+                    :precision="5"
+                    controls-position="right"
+                    style="width: 100%"
+                    :disabled="row.saving || row.deleting"
+                  />
+                </template>
+              </el-table-column>
+              <el-table-column label="机械台班系数" width="150">
+                <template #default="{ row }">
+                  <el-input-number
+                    v-model="row.machineShiftCoefficient"
+                    :min="0"
+                    :precision="5"
+                    controls-position="right"
+                    style="width: 100%"
+                    :disabled="row.saving || row.deleting"
+                  />
+                </template>
+              </el-table-column>
+              <el-table-column label="仪器仪表台班" width="160">
+                <template #default="{ row }">
+                  <el-input-number
+                    v-model="row.instrumentShift"
+                    :min="0"
+                    :precision="5"
+                    controls-position="right"
+                    style="width: 100%"
+                    :disabled="row.saving || row.deleting"
+                  />
+                </template>
+              </el-table-column>
+              <el-table-column label="仪器仪表台班单价" width="180">
+                <template #default="{ row }">
+                  <el-input-number
+                    v-model="row.instrumentShiftUnitPrice"
+                    :min="0"
+                    :precision="5"
+                    controls-position="right"
+                    style="width: 100%"
+                    :disabled="row.saving || row.deleting"
+                  />
+                </template>
+              </el-table-column>
+              <el-table-column label="仪器仪表系数" width="160">
+                <template #default="{ row }">
+                  <el-input-number
+                    v-model="row.instrumentShiftCoefficient"
+                    :min="0"
+                    :precision="5"
+                    controls-position="right"
+                    style="width: 100%"
+                    :disabled="row.saving || row.deleting"
+                  />
+                </template>
+              </el-table-column>
+              <el-table-column label="材料数量" width="140">
+                <template #default="{ row }">
+                  <el-input-number
+                    v-model="row.materialQuantity"
+                    :min="0"
+                    :precision="5"
+                    controls-position="right"
+                    style="width: 100%"
+                    :disabled="row.saving || row.deleting"
+                  />
+                </template>
+              </el-table-column>
+              <el-table-column label="材料单价" width="140">
+                <template #default="{ row }">
+                  <el-input-number
+                    v-model="row.materialUnitPrice"
+                    :min="0"
+                    :precision="5"
+                    controls-position="right"
+                    style="width: 100%"
+                    :disabled="row.saving || row.deleting"
+                  />
                 </template>
               </el-table-column>
               <el-table-column label="操作" width="170" align="center">
@@ -259,7 +355,13 @@ import { useRoute, useRouter } from 'vue-router';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { deleteProjectDrawing, listProjectDrawings, saveProjectDrawing } from '@/api/docman/drawing';
 import { deleteDrawingWorkItems, listDrawingWorkItems, saveDrawingWorkItem } from '@/api/docman/drawingWorkItem';
-import type { DocProjectDrawing, DocProjectDrawingForm, DocProjectDrawingWorkItem, DocProjectDrawingWorkItemForm, DocmanId } from '@/api/docman/types';
+import type {
+  DocProjectDrawing,
+  DocProjectDrawingForm,
+  DocProjectDrawingWorkItem,
+  DocProjectDrawingWorkItemForm,
+  DocmanId
+} from '@/api/docman/types';
 import { handleApiError } from '@/utils/error';
 import { paginateRows, resolvePathProjectId } from '../inputLine/inputLine.util';
 
@@ -335,13 +437,19 @@ function buildEditableWorkItem(item: Partial<DocProjectDrawingWorkItem> = {}): E
     id: item.id,
     projectId: item.projectId ?? projectId.value ?? '',
     drawingId: item.drawingId ?? workItemDialog.drawingId ?? '',
-    workItemCode: item.workItemCode ?? '',
     workItemName: item.workItemName ?? '',
-    category: item.category ?? '',
-    unit: item.unit ?? '',
-    quantity: item.quantity,
-    includeInEstimate: item.includeInEstimate ?? true,
-    remark: item.remark ?? '',
+    technician: item.technician ?? 0,
+    technicianCoefficient: item.technicianCoefficient ?? 1,
+    generalWorker: item.generalWorker ?? 0,
+    generalWorkerCoefficient: item.generalWorkerCoefficient ?? 1,
+    machineShift: item.machineShift ?? 0,
+    machineShiftUnitPrice: item.machineShiftUnitPrice ?? 0,
+    machineShiftCoefficient: item.machineShiftCoefficient ?? 1,
+    instrumentShift: item.instrumentShift ?? 0,
+    instrumentShiftUnitPrice: item.instrumentShiftUnitPrice ?? 0,
+    instrumentShiftCoefficient: item.instrumentShiftCoefficient ?? 1,
+    materialQuantity: item.materialQuantity ?? 0,
+    materialUnitPrice: item.materialUnitPrice ?? 0,
     saving: false,
     deleting: false
   };
@@ -356,13 +464,19 @@ function buildWorkItemPayload(row: EditableDrawingWorkItem): DocProjectDrawingWo
     id: row.id,
     projectId: projectId.value || '',
     drawingId: workItemDialog.drawingId || '',
-    workItemCode: normalizeText(row.workItemCode),
     workItemName: normalizeText(row.workItemName),
-    category: normalizeText(row.category),
-    unit: normalizeText(row.unit),
-    quantity: row.quantity,
-    includeInEstimate: row.includeInEstimate ?? true,
-    remark: normalizeText(row.remark)
+    technician: row.technician ?? 0,
+    technicianCoefficient: row.technicianCoefficient ?? 1,
+    generalWorker: row.generalWorker ?? 0,
+    generalWorkerCoefficient: row.generalWorkerCoefficient ?? 1,
+    machineShift: row.machineShift ?? 0,
+    machineShiftUnitPrice: row.machineShiftUnitPrice ?? 0,
+    machineShiftCoefficient: row.machineShiftCoefficient ?? 1,
+    instrumentShift: row.instrumentShift ?? 0,
+    instrumentShiftUnitPrice: row.instrumentShiftUnitPrice ?? 0,
+    instrumentShiftCoefficient: row.instrumentShiftCoefficient ?? 1,
+    materialQuantity: row.materialQuantity ?? 0,
+    materialUnitPrice: row.materialUnitPrice ?? 0
   };
 }
 
@@ -488,6 +602,10 @@ function handleAppendWorkItemRow() {
 
 async function handleSaveWorkItem(row: EditableDrawingWorkItem) {
   if (!hasProjectId.value || !workItemDialog.drawingId || row.saving) {
+    return;
+  }
+  if (!normalizeText(row.workItemName)) {
+    ElMessage.warning('请输入工作量名称');
     return;
   }
   row.saving = true;
